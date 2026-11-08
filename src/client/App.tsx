@@ -11,18 +11,17 @@ const appointmentTimes = Array.from({ length: 58 }, (_, index) => {
   return { value, label };
 });
 
-function localDateTimeValue(date = new Date()) {
+function localTimeValue(date = new Date()) {
   const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(11, 16);
 }
 
-function isoToLocalDateTime(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? localDateTimeValue() : localDateTimeValue(date);
-}
-
-function localDateTimeToIso(value: string) {
-  return new Date(value).toISOString();
+function formatCheckInTime(value: string) {
+  const time = /^\d{2}:\d{2}$/.test(value) ? value : localTimeValue(new Date(value));
+  const [hour, minute] = time.split(':').map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return value;
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
 
 function formatAppointmentTime(value: string) {
@@ -40,7 +39,6 @@ function formatAppointmentTime(value: string) {
 }
 function displayName(entry: QueueEntry) { return `${entry.firstName} ${entry.lastName.charAt(0)}.`; }
 function Clock() { const [now, setNow] = useState(() => new Date()); useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []); return <p className="clock">{new Intl.DateTimeFormat(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(now)}</p>; }
-function formatCheckInTime(value: string) { return new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit' }).format(new Date(value)); }
 function QueueList({ title, entries, action, details = false }: { title: string; entries: QueueEntry[]; action?: (entry: QueueEntry) => ReactNode; details?: boolean }) { return <section className="queue-section"><h2>{title}</h2>{entries.length === 0 ? <p className="empty">No clients</p> : <div className="name-list">{entries.map((entry) => <div className="client-card" key={entry.id}><div><span className="name-text">{displayName(entry)}</span>{details && <div className="entry-details">{entry.appointmentTime ? `Appointment ${formatAppointmentTime(entry.appointmentTime)} · ` : ''}Checked in {formatCheckInTime(entry.checkInTime)}</div>}</div>{action?.(entry)}</div>)}</div>}</section>; }
 function Connection({ connected }: { connected: boolean }) { return connected ? null : <><div className="banner">Connection lost. Reconnecting…</div><div className="disconnect-overlay" /></>; }
 
@@ -81,7 +79,7 @@ function Intake({ entries, connected, onAdded, onStatus, onDelete, onEdit, onCle
     setFormError('');
     setSaving(true);
     try {
-      await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: new Date(localDateTimeValue()).toISOString() });
+      await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: localTimeValue() });
       setFirstName(''); setLastName(''); setAppointmentTime('');
       onAdded();
     } catch (submitError) {
@@ -97,5 +95,5 @@ function Intake({ entries, connected, onAdded, onStatus, onDelete, onEdit, onCle
 
 function EditModal({ entry, onCancel, onSave }: { entry: QueueEntry; onCancel: () => void; onSave: (entry: QueueEntry) => void }) {
   const [draft, setDraft] = useState(entry);
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="edit-title"><div className="modal-header"><h2 id="edit-title">Edit client</h2><button className="icon-button" onClick={onCancel} aria-label="Close">×</button></div><div className="modal-body"><label>First name<input value={draft.firstName} onChange={(e) => setDraft({ ...draft, firstName: e.target.value })} /></label><label>Last name<input value={draft.lastName} onChange={(e) => setDraft({ ...draft, lastName: e.target.value })} /></label><label>Check-in time<input type="datetime-local" value={isoToLocalDateTime(draft.checkInTime)} onChange={(e) => setDraft({ ...draft, checkInTime: localDateTimeToIso(e.target.value) })} /></label><label>Appointment time<select value={draft.appointmentTime ?? ''} onChange={(e) => setDraft({ ...draft, appointmentTime: e.target.value || null })}><option value="">Walk-in</option>{appointmentTimes.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label><label>Status<select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as QueueStatus })}><option value="checked_in">Checked in</option><option value="shopping">Shopping</option></select></label></div><div className="modal-actions"><button className="secondary-button" onClick={onCancel}>Cancel</button><button onClick={() => onSave(draft)}>Save changes</button></div></div></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="edit-title"><div className="modal-header"><h2 id="edit-title">Edit client</h2><button className="icon-button" onClick={onCancel} aria-label="Close">×</button></div><div className="modal-body"><label>First name<input value={draft.firstName} onChange={(e) => setDraft({ ...draft, firstName: e.target.value })} /></label><label>Last name<input value={draft.lastName} onChange={(e) => setDraft({ ...draft, lastName: e.target.value })} /></label><label>Check-in time<input type="time" value={draft.checkInTime} onChange={(e) => setDraft({ ...draft, checkInTime: e.target.value })} /></label><label>Appointment time<select value={draft.appointmentTime ?? ''} onChange={(e) => setDraft({ ...draft, appointmentTime: e.target.value || null })}><option value="">Walk-in</option>{appointmentTimes.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label><label>Status<select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as QueueStatus })}><option value="checked_in">Checked in</option><option value="shopping">Shopping</option></select></label></div><div className="modal-actions"><button className="secondary-button" onClick={onCancel}>Cancel</button><button onClick={() => onSave(draft)}>Save changes</button></div></div></div>;
 }
