@@ -49,8 +49,10 @@ export default {
     if (url.pathname === '/api/devices/revoke') {
       if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
       if (!['admin', 'intake'].includes(role)) return forbidden();
-      const response = await queueStub(env).fetch(request);
-      if (response.ok) await queueStub(env).fetch(new Request('https://queue.internal/api/device/revoke-connections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: await request.clone().text() }));
+      const body = await request.text();
+      const stub = queueStub(env);
+      const response = await stub.fetch(new Request(request, { body }));
+      if (response.ok) await stub.fetch(new Request('https://queue.internal/api/device/revoke-connections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }));
       return response;
     }
     if (url.pathname === '/api/devices') {
