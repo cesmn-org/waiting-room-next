@@ -36,6 +36,9 @@ export function App() {
   const walkIns = useMemo(() => entries.filter((entry) => entry.status === 'checked_in' && !entry.appointmentTime), [entries]);
 
   useEffect(() => {
+    const heartbeatIntervalMs = 2000;
+    const heartbeatTimeoutMs = 1500;
+    const reconnectDelayMs = 750;
     let retry: number | undefined;
     let heartbeat: number | undefined;
     let heartbeatTimeout: number | undefined;
@@ -63,8 +66,8 @@ export function App() {
         heartbeat = window.setInterval(() => {
           if (socket.readyState !== WebSocket.OPEN) return;
           socket.send(JSON.stringify({ action: 'ping' }));
-          heartbeatTimeout = window.setTimeout(markDisconnected, 5000);
-        }, 5000);
+          heartbeatTimeout = window.setTimeout(markDisconnected, heartbeatTimeoutMs);
+        }, heartbeatIntervalMs);
       };
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data) as { type: string; entries?: QueueEntry[] };
@@ -78,7 +81,7 @@ export function App() {
       socket.onclose = () => {
         setConnected(false);
         clearHeartbeat();
-        if (!stopped) retry = window.setTimeout(connect, 2000);
+        if (!stopped) retry = window.setTimeout(connect, reconnectDelayMs);
       };
       socket.onerror = () => markDisconnected();
     };
