@@ -778,10 +778,9 @@ function DeviceCodeInput({
 function DeviceAccessPanel() {
   const [pairings, setPairings] = useState<PairingRequest[]>([]);
   const [devices, setDevices] = useState<DeviceCredential[]>([]);
-  const [code, setCode] = useState('');
+  const [codes, setCodes] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
-  const [approved, setApproved] = useState(false);
   async function load() {
     const [pending, issued] = await Promise.all([
       fetch('/api/pair/pending'),
@@ -794,9 +793,6 @@ function DeviceAccessPanel() {
   useEffect(() => {
     load().catch((e) => setError(e instanceof Error ? e.message : 'Unable to load device access.'));
   }, []);
-  useEffect(() => {
-    if (code.length === 8 && !working) decide(code, 'approve');
-  }, [code]);
   async function cancelPairing(id: string) {
     setWorking(true);
     setError('');
@@ -826,20 +822,18 @@ function DeviceAccessPanel() {
       setWorking(false);
     }
   }
-  async function decide(userCode: string, action: 'approve' | 'deny') {
+  async function decide(id: string, userCode: string, action: 'approve' | 'deny') {
     setWorking(true);
     setError('');
     try {
       const response = await fetch(`/api/pair/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userCode }),
+        body: JSON.stringify({ id, userCode }),
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.error || 'Unable to update pairing request.');
-      setCode('');
-      setApproved(true);
-      window.setTimeout(() => setApproved(false), 1200);
+      setCodes((current) => ({ ...current, [id]: '' }));
       await load();
     } catch (decisionError) {
       setError(
@@ -874,68 +868,68 @@ function DeviceAccessPanel() {
   return (
     <section className="device-panel">
       <h2>Device access</h2>
-      <p className="panel-help">
-        Enter the code shown on the TV or tablet to approve it. Pending requests below can be
-        canceled.
-      </p>
-      <div className={`pair-code-form ${working ? 'pair-code-submitting' : ''}`}>
-        {approved ? (
-          <span className="code-approved" role="status">
-            ✓ Device approved
-          </span>
-        ) : (
-          <>
-            <DeviceCodeInput value={code} onChange={setCode} disabled={working} />
-          </>
-        )}
-      </div>
+      <p className="panel-help">Pairing requests and issued device credentials.</p>
       {error && <p className="error">{error}</p>}
-      <div className="device-section pending-section">
-        <h3>Pending requests</h3>
-        {pairings.length ? (
-          pairings.map((pair) => (
-            <div className="device-row" key={pair.id}>
-              <span>
-                <strong>{pair.permission}</strong>
-                <small>
-                  Expires {formatDateTime(pair.expiresAt)} · Use the code shown on the device above
-                </small>
-              </span>
-              <button
-                className="secondary-button"
-                disabled={working}
-                onClick={() => cancelPairing(pair.id)}
-              >
-                Cancel
-              </button>
-            </div>
-          ))
-        ) : (
-          <p className="panel-empty">No pending requests.</p>
-        )}
-      </div>
       <div className="device-section issued-section">
-        <h3>Issued credentials</h3>
-        {devices.filter((device) => !device.revokedAt).length ? (
-          devices
-            .filter((device) => !device.revokedAt)
-            .map((device) => (
-              <div className="device-row" key={device.id}>
-                <span>
-                  <strong>{device.permission}</strong>
-                  <small>Active · {formatDateTime(device.createdAt)}</small>
-                </span>
-                <button
-                  className="danger-button"
-                  disabled={working}
-                  onClick={() => revoke(device.id)}
-                >
-                  Revoke
-                </button>
-              </div>
-            ))
+        {pairings.length || devices.length ? (
+          <>
+            {pairings.map((pair) =>
+              pair.status === 'pending' ? (
+                <div className="device-row" key={pair.id}>
+                  <span>
+                    <strong>{pair.permission} · Pending</strong>
+                    <small>Expires {formatDateTime(pair.expiresAt)}</small>
+                    <DeviceCodeInput
+                      value={codes[pair.id] || ''}
+                      onChange={(value) =>
+                        setCodes((current) => ({ ...current, [pair.id]: value }))
+                      }
+                      disabled={working}
+                    />
+                  </span>
+                  <button
+                    disabled={working || (codes[pair.id] || '').length !== 8}
+                    onClick={() => decide(pair.id, codes[pair.id] || '', 'approve')}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    className="secondary-button"
+                    disabled={working}
+                    onClick={() => cancelPairing(pair.id)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="device-row" key={pair.id}>
+                  <span>
+                    <strong>{pair.permission} · Approved</strong>
+                    <small>Approved {formatDateTime(pair.createdAt)}</small>
+                  </span>
+                </div>
+              ),
+            )}
+            {devices
+              .filter((device) => !device.revokedAt)
+              .map((device) => (
+                <div className="device-row" key={device.id}>
+                  <span>
+                    <strong>{device.permission} · Issued</strong>
+                    <small>Issued {formatDateTime(device.createdAt)}</small>
+                  </span>
+                  <button
+                    className="danger-button"
+                    disabled={working}
+                    onClick={() => revoke(device.id)}
+                  >
+                    Revoke
+                  </button>
+                </div>
+              ))}
+          </>
         ) : (
-          <p className="panel-empty">No active device credentials.</p>
+          <p className="panel-empty">No device requests.</p>
         )}
       </div>
     </section>

@@ -143,7 +143,7 @@ export class WaitingRoom {
     );
     return this.sql
       .exec(
-        "SELECT id, permission, status, created_at AS createdAt, expires_at AS expiresAt FROM pairing_requests WHERE status='pending' ORDER BY created_at ASC",
+        "SELECT id, permission, status, created_at AS createdAt, expires_at AS expiresAt FROM pairing_requests WHERE status IN ('pending', 'approved') ORDER BY created_at ASC",
       )
       .toArray();
   }
@@ -215,10 +215,12 @@ export class WaitingRoom {
   async approvePairing(request, decision) {
     const body = await request.json().catch(() => null);
     const row =
+      body?.id &&
       body?.userCode &&
       this.sql
         .exec(
-          "SELECT * FROM pairing_requests WHERE user_code_hash=? AND status='pending'",
+          "SELECT * FROM pairing_requests WHERE id=? AND user_code_hash=? AND status='pending'",
+          body.id,
           await hashToken(normalizeUserCode(body.userCode)),
         )
         .toArray()[0];
