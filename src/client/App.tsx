@@ -495,6 +495,7 @@ export function App() {
         connected={connected}
         onAdded={refresh}
         onEdit={editEntry}
+        onDelete={remove}
         onClear={refresh}
         userEmail={userEmail}
         error={error}
@@ -961,6 +962,7 @@ function Intake({
   entries,
   onAdded,
   onEdit,
+  onDelete,
   onClear,
   userEmail,
   error,
@@ -969,9 +971,9 @@ function Intake({
   entries: QueueEntry[];
   connected: boolean;
   onAdded: () => void;
-  onStatus: (entry: QueueEntry, status: QueueStatus) => void;
   onDelete: (entry: QueueEntry) => void;
   onEdit: (entry: QueueEntry) => void;
+  onDelete: (entry: QueueEntry) => void;
   onClear: () => void;
   userEmail: string;
   error: string;
@@ -1120,7 +1122,19 @@ function Intake({
             </div>
           ))}
       </div>
-      {editing && <EditModal entry={editing} onCancel={() => setEditing(null)} onSave={saveEdit} />}
+      {editing && (
+        <EditModal
+          entry={editing}
+          onCancel={() => setEditing(null)}
+          onSave={saveEdit}
+          onDelete={() => {
+            if (window.confirm('Delete this client from the queue? This cannot be undone.')) {
+              onDelete(editing);
+              setEditing(null);
+            }
+          }}
+        />
+      )}
     </main>
   );
 }
@@ -1129,10 +1143,12 @@ function EditModal({
   entry,
   onCancel,
   onSave,
+  onDelete,
 }: {
   entry: QueueEntry;
   onCancel: () => void;
   onSave: (entry: QueueEntry) => void;
+  onDelete: () => void;
 }) {
   const [draft, setDraft] = useState(entry);
   return (
@@ -1201,6 +1217,9 @@ function EditModal({
         <div className="modal-actions">
           <button className="secondary-button" onClick={onCancel}>
             Cancel
+          </button>
+          <button className="danger-button" onClick={onDelete}>
+            Delete
           </button>
           <button onClick={() => onSave(draft)}>Save changes</button>
         </div>
