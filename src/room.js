@@ -46,10 +46,11 @@ export class WaitingRoom {
     const body = request.method === 'DELETE' ? {} : await request.json().catch(() => null);
     if (!body) return Response.json({ error: 'A valid JSON body is required' }, { status: 400 });
 
+    const path = url.pathname.replace(/\/$/, '');
     let result;
     const now = new Date().toISOString();
-    const entryId = Number(url.pathname.split('/').pop());
-    if (request.method === 'DELETE' && url.pathname === '/api/queue') {
+    const entryId = Number(path.split('/').pop());
+    if (request.method === 'DELETE' && path === '/api/queue') {
       this.sql.exec('DELETE FROM queue_entries');
       result = { cleared: true };
     } else if (request.method === 'POST' && url.pathname === '/api/queue') {
