@@ -326,12 +326,18 @@ export function App() {
         heartbeat = window.setInterval(beat, 1000);
       };
       socket.onmessage = (event) => {
-        const message = JSON.parse(event.data) as {
+        let message: {
           type: string;
           id?: number;
           entries?: QueueEntry[];
         };
-        logNetwork('websocket message', message);
+        try {
+          message = JSON.parse(event.data);
+        } catch {
+          logNetwork('websocket message dropped (unparseable)');
+          return;
+        }
+        logNetwork('websocket message', { type: message.type, count: message.entries?.length });
         if (message.type === 'pong' && message.id === awaiting) {
           if (timeout) clearTimeout(timeout);
           timeout = undefined;
@@ -353,8 +359,7 @@ export function App() {
         clear();
         if ((mode === 'tv' || mode === 'tablet') && event.code === 4001) {
           setDeviceReady(false);
-          setPairingStatus('starting');
-          setPairingAttempt((attempt) => attempt + 1);
+          setPairingStatus('revoked');
           return;
         }
         if (!stopped) {
@@ -381,29 +386,29 @@ export function App() {
   }, [mode, deviceReady]);
 
   async function setStatus(entry: QueueEntry, status: QueueStatus) {
-    const previous = entries;
-    setEntries(entries.map((e) => (e.id === entry.id ? { ...e, status } : e)));
+    const previousStatus = entry.status;
+    setEntries((current) => current.map((e) => (e.id === entry.id ? { ...e, status } : e)));
     try {
       await mutateQueue('PATCH', `/api/queue/${entry.id}?device=${mode}`, { status });
     } catch {
-      setEntries(previous);
+      setEntries((current) =>
+        current.map((e) => (e.id === entry.id ? { ...e, status: previousStatus } : e)),
+      );
       setError('Update failed; the change was reverted.');
     }
   }
   async function remove(entry: QueueEntry) {
-    const previous = entries;
-    setEntries(entries.filter((e) => e.id !== entry.id));
+    setEntries((current) => current.filter((e) => e.id !== entry.id));
     try {
       await mutateQueue('DELETE', `/api/queue/${entry.id}`);
     } catch {
-      setEntries(previous);
+      refresh();
       setError('Delete failed; the client was restored.');
     }
   }
 
   async function editEntry(updated: QueueEntry) {
-    const previous = entries;
-    setEntries(entries.map((entry) => (entry.id === updated.id ? updated : entry)));
+    setEntries((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
     try {
       await mutateQueue('PATCH', `/api/queue/${updated.id}`, {
         firstName: updated.firstName,
@@ -413,7 +418,7 @@ export function App() {
         status: updated.status,
       });
     } catch {
-      setEntries(previous);
+      refresh();
       setError('Update failed; the change was reverted.');
     }
   }
@@ -451,7 +456,7 @@ export function App() {
                   ? 'Pairing was denied. Reload to try again.'
                   : error || 'Unable to pair this device.'}
         </p>
-        {['denied', 'expired', 'error'].includes(pairingStatus) && (
+        {['denied', 'expired', 'error', 'revoked'].includes(pairingStatus) && (
           <button
             onClick={() => {
               setError('');
@@ -489,8 +494,6 @@ export function App() {
         entries={entries}
         connected={connected}
         onAdded={refresh}
-        onStatus={setStatus}
-        onDelete={remove}
         onEdit={editEntry}
         onClear={refresh}
         userEmail={userEmail}
