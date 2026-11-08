@@ -73,6 +73,12 @@ export default {
       return queueStub(env).fetch(request);
     }
 
+    if (url.pathname === '/api/pair/cancel') {
+      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
+      if (!['admin', 'intake'].includes(role)) return forbidden();
+      return queueStub(env).fetch(request);
+    }
+
     if (url.pathname === '/api/pair/approve' || url.pathname === '/api/pair/deny') {
       if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
       if (!['admin', 'intake'].includes(role)) return forbidden();

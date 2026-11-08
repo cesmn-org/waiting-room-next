@@ -31,7 +31,7 @@ button:hover:not(:disabled) { filter:brightness(1.1); } .btn-primary { backgroun
 .side-menu-header h2 { margin:0; }
 .device-panel { background:#fff; border-radius:12px; padding:1rem; box-shadow:var(--shadow); }
 .device-panel h2 { margin-bottom:.25rem; }
-.device-panel h3 { margin:1.2rem 0 .5rem; font-size:.85rem; text-transform:uppercase; color:#687386; letter-spacing:.04em; }
+.device-panel h3 { margin:1.2rem 0 .5rem; font-size:.85rem; text-transform:uppercase; color:#687386; letter-spacing:.04em; } .device-section { border-radius:10px; padding:.75rem; margin-top:.8rem; } .device-section h3 { margin:.1rem 0 .5rem; } .pending-section { background:#fff8e6; border:1px solid #f1d58b; } .issued-section { background:#f4f7fa; border:1px solid #dce3ea; }
 .panel-help,.panel-empty { color:#6c7480; font-size:.85rem; margin-bottom:.8rem; }
 .pair-code-form { display:flex; gap:7px; flex-wrap:wrap; }
 .pair-code-form input { flex:1 1 10rem; min-width:0; }
