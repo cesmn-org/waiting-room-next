@@ -50,6 +50,7 @@ function logNetwork(label: string, details?: unknown) { console.info(`[waiting-r
 
 export function App() {
   const mode: 'intake' | 'admin' | 'tablet' | 'tv' = window.location.pathname.startsWith('/intake') ? 'intake' : window.location.pathname.startsWith('/admin') ? 'admin' : window.location.pathname.startsWith('/tablet') ? 'tablet' : window.location.pathname.startsWith('/host') ? 'tablet' : 'tv';
+  useEffect(() => { document.title = `Waiting Room: ${mode === 'intake' ? 'Intake' : mode === 'admin' ? 'Admin' : mode === 'tablet' ? 'Tablet' : 'TV'}`; }, [mode]);
   const [deviceReady, setDeviceReady] = useState(mode !== 'tv' && mode !== 'tablet'); const [pairingCode, setPairingCode] = useState(''); const [pairingStatus, setPairingStatus] = useState('starting'); const [pairingAttempt, setPairingAttempt] = useState(0);
   const [displayMessage, setDisplayMessage] = useState<DisplayMessage>({ message: '', active: 0, updatedAt: null });
   const [entries, setEntries] = useState<QueueEntry[]>([]); const [connected, setConnected] = useState(false); const [error, setError] = useState(''); const [userEmail, setUserEmail] = useState(''); const [sessionChecked, setSessionChecked] = useState(mode !== 'intake' && mode !== 'admin');
