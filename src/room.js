@@ -22,6 +22,7 @@ export class WaitingRoom {
     if (url.pathname === '/api/pair/status' && request.method === 'POST') return this.pairingStatus(request);
     if (url.pathname === '/api/pair/complete' && request.method === 'POST') return this.completePairing(request);
     if (url.pathname === '/api/device/check' && request.method === 'POST') return this.checkDevice(request);
+    if (url.pathname === '/api/device/revoke-connections' && request.method === 'POST') return this.revokeConnections(request);
     if (url.pathname === '/api/pair/pending' && request.method === 'GET') return Response.json(this.pendingPairings());
     if (url.pathname === '/api/devices' && request.method === 'GET') return Response.json(this.listDevices());
     if (url.pathname === '/api/devices/revoke' && request.method === 'POST') return this.revokeDevice(request);
@@ -31,7 +32,10 @@ export class WaitingRoom {
     if (url.pathname.startsWith('/api/queue') && request.method !== 'GET') return this.mutate(request, url);
     if (url.pathname === '/ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected WebSocket upgrade', { status: 426 });
-      const pair = new WebSocketPair(); this.ctx.acceptWebSocket(pair[1]); pair[1].send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
+      const pair = new WebSocketPair();
+      const credential = request.headers.get('X-Device-Credential');
+      if (credential) pair[1].serializeAttachment({ credentialHash: await hashToken(credential) });
+      this.ctx.acceptWebSocket(pair[1]); pair[1].send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
       return new Response(null, { status: 101, webSocket: pair[0] });
     }
     return new Response('Not found', { status: 404 });
@@ -41,6 +45,7 @@ export class WaitingRoom {
   listDevices() { return this.sql.exec("SELECT id, permission, created_at AS createdAt, revoked_at AS revokedAt, last_used_at AS lastUsedAt FROM device_credentials ORDER BY created_at DESC").toArray(); }
   async revokeDevice(request) { const body = await request.json().catch(() => null); if (!body?.id) return Response.json({ error: 'Credential ID is required' }, { status: 400 }); this.sql.exec("UPDATE device_credentials SET revoked_at=? WHERE id=?", new Date().toISOString(), body.id); return Response.json({ ok: true }); }
   pendingPairings() { const now = new Date().toISOString(); this.sql.exec("UPDATE pairing_requests SET status='expired' WHERE status='pending' AND expires_at <= ?", now); return this.sql.exec("SELECT id, permission, status, created_at AS createdAt, expires_at AS expiresAt FROM pairing_requests WHERE status='pending' ORDER BY created_at ASC").toArray(); }
+  async revokeConnections(request) { const body = await request.json().catch(() => null); if (!body?.id) return Response.json({ error: 'Credential ID is required' }, { status: 400 }); const row = this.sql.exec('SELECT credential_hash FROM device_credentials WHERE id=?', body.id).toArray()[0]; if (!row) return Response.json({ error: 'Credential not found' }, { status: 404 }); const connections = this.ctx.getWebSockets(); for (const ws of connections) { if (ws.deserializeAttachment()?.credentialHash === row.credential_hash) ws.close(4001, 'Device credential revoked'); } return Response.json({ ok: true }); }
   async checkDevice(request) { const body = await request.json().catch(() => null); const row = body?.credential && this.sql.exec('SELECT permission FROM device_credentials WHERE credential_hash=? AND revoked_at IS NULL', await hashToken(body.credential)).toArray()[0]; if (!row) return Response.json({ error: 'Invalid device credential' }, { status: 401 }); this.sql.exec('UPDATE device_credentials SET last_used_at=? WHERE credential_hash=?', new Date().toISOString(), await hashToken(body.credential)); return Response.json({ permission: row.permission }); }
   async completePairing(request) { const body = await request.json().catch(() => null); const row = body?.deviceCode && this.sql.exec("SELECT * FROM pairing_requests WHERE device_code_hash=? AND status='approved'", await hashToken(body.deviceCode)).toArray()[0]; if (!row || Date.parse(row.expires_at) <= Date.now()) return Response.json({ error: 'Pairing is not approved or has expired' }, { status: 400 }); this.sql.exec("UPDATE pairing_requests SET status='exchanged', credential=NULL WHERE id=?", row.id); return Response.json({ credential: row.credential, permission: row.permission }); }
   async approvePairing(request, decision) { const body = await request.json().catch(() => null); const row = body?.userCode && this.sql.exec("SELECT * FROM pairing_requests WHERE user_code_hash=? AND status='pending'", await hashToken(body.userCode)).toArray()[0]; if (!row || Date.parse(row.expires_at) <= Date.now()) return Response.json({ error: 'Pairing code is invalid or expired' }, { status: 400 }); if (decision === 'deny') { this.sql.exec("UPDATE pairing_requests SET status='denied' WHERE id=?", row.id); return Response.json({ ok: true }); } const credential = randomToken(); this.sql.exec("INSERT INTO device_credentials (id,credential_hash,permission,created_at) VALUES (?,?,?,?)", crypto.randomUUID(), await hashToken(credential), row.permission, new Date().toISOString()); this.sql.exec("UPDATE pairing_requests SET status='approved', credential=?, approved_at=? WHERE id=?", credential, new Date().toISOString(), row.id); return Response.json({ ok: true }); }

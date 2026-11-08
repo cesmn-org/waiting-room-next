@@ -46,7 +46,14 @@ export default {
       return unauthorized('Valid Cloudflare Access authentication or device pairing required', request, env);
     }
 
-    if (url.pathname === '/api/devices' || url.pathname === '/api/devices/revoke') {
+    if (url.pathname === '/api/devices/revoke') {
+      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
+      if (!['admin', 'intake'].includes(role)) return forbidden();
+      const response = await queueStub(env).fetch(request);
+      if (response.ok) await queueStub(env).fetch(new Request('https://queue.internal/api/device/revoke-connections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: await request.clone().text() }));
+      return response;
+    }
+    if (url.pathname === '/api/devices') {
       if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
       if (!['admin', 'intake'].includes(role)) return forbidden();
       return queueStub(env).fetch(request);
@@ -90,6 +97,12 @@ export default {
         const permission = await devicePermission(request, env);
         if (!permission) return unauthorized('Device pairing required');
         if (isMutation && permission !== 'tablet') return forbidden();
+      }
+      if (!identity && permission) {
+        const headers = new Headers(request.headers);
+        const deviceCredential = cookie(request);
+        if (deviceCredential) headers.set('X-Device-Credential', deviceCredential);
+        return queueStub(env).fetch(new Request(request, { headers }));
       }
       return queueStub(env).fetch(request);
     }
