@@ -892,7 +892,7 @@ function DeviceAccessPanel() {
                         disabled={working || (codes[pair.id] || '').length !== 8}
                         onClick={() => decide(pair.id, codes[pair.id] || '', 'approve')}
                       >
-                        Approve
+                        Issue
                       </button>
                       <button
                         className="secondary-button"
@@ -907,8 +907,8 @@ function DeviceAccessPanel() {
               ) : (
                 <div className="device-row" key={pair.id}>
                   <span>
-                    <strong>{pair.permission} · Approved</strong>
-                    <small>Approved {formatDateTime(pair.createdAt)}</small>
+                    <strong>{pair.permission} · Issued</strong>
+                    <small>Issued {formatDateTime(pair.createdAt)}</small>
                   </span>
                 </div>
               ),

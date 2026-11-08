@@ -143,7 +143,7 @@ export class WaitingRoom {
     );
     return this.sql
       .exec(
-        "SELECT id, permission, status, created_at AS createdAt, expires_at AS expiresAt FROM pairing_requests WHERE status IN ('pending', 'approved') ORDER BY created_at ASC",
+        "SELECT id, permission, status, created_at AS createdAt, expires_at AS expiresAt FROM pairing_requests WHERE status='pending' ORDER BY created_at ASC",
       )
       .toArray();
   }
