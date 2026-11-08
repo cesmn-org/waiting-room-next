@@ -41,7 +41,7 @@ export class WaitingRoom {
     const body = await request.json().catch(() => null);
     const mutationId = request.headers.get('X-Mutation-Id');
     if (!mutationId || !body) return Response.json({ error: 'Mutation ID and JSON body are required' }, { status: 400 });
-    const prior = this.sql.exec('SELECT response FROM mutations WHERE mutation_id = ?', mutationId).one();
+    const prior = this.sql.exec('SELECT response FROM mutations WHERE mutation_id = ?', mutationId).toArray()[0];
     if (prior) return Response.json(JSON.parse(prior.response));
 
     let result;
@@ -50,7 +50,7 @@ export class WaitingRoom {
     if (request.method === 'POST' && url.pathname === '/api/queue') {
       if (!body.firstName || !body.lastName || !body.checkInTime) return Response.json({ error: 'Names and check-in time are required' }, { status: 400 });
       this.sql.exec('INSERT INTO queue_entries (first_name,last_name,appointment_time,check_in_time,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)', body.firstName.trim(), body.lastName.trim(), body.appointmentTime || null, body.checkInTime, 'checked_in', now, now);
-      result = this.sql.exec('SELECT id FROM queue_entries ORDER BY id DESC LIMIT 1').one();
+      result = this.sql.exec('SELECT id FROM queue_entries ORDER BY id DESC LIMIT 1').toArray()[0];
     } else if (request.method === 'PATCH' && Number.isInteger(entryId)) {
       if (!['checked_in', 'shopping'].includes(body.status)) return Response.json({ error: 'Invalid status' }, { status: 400 });
       this.sql.exec('UPDATE queue_entries SET status=?, updated_at=? WHERE id=?', body.status, now, entryId);
