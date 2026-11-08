@@ -7,6 +7,7 @@ const CREATE_TABLE = `
   CREATE TABLE IF NOT EXISTS mutations (mutation_id TEXT PRIMARY KEY, response TEXT NOT NULL, created_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS pairing_requests (id TEXT PRIMARY KEY, device_code_hash TEXT NOT NULL UNIQUE, user_code_hash TEXT NOT NULL UNIQUE, permission TEXT NOT NULL CHECK (permission IN ('tv', 'tablet')), status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'denied', 'expired', 'exchanged')), credential TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, approved_at TEXT);
   CREATE TABLE IF NOT EXISTS device_credentials (id TEXT PRIMARY KEY, credential_hash TEXT NOT NULL UNIQUE, permission TEXT NOT NULL CHECK (permission IN ('tv', 'tablet')), created_at TEXT NOT NULL, revoked_at TEXT, last_used_at TEXT);
+  CREATE TABLE IF NOT EXISTS display_message (id INTEGER PRIMARY KEY CHECK (id = 1), message TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
 `;
 
 const encoder = new TextEncoder();
@@ -29,6 +30,8 @@ export class WaitingRoom {
     if (url.pathname === '/api/devices/revoke' && request.method === 'POST') return this.revokeDevice(request);
     if (url.pathname === '/api/pair/approve' && request.method === 'POST') return this.approvePairing(request, 'approve');
     if (url.pathname === '/api/pair/cancel' && request.method === 'POST') return this.cancelPairing(request);
+    if (url.pathname === '/api/display-message' && request.method === 'GET') return Response.json(this.getDisplayMessage());
+    if (url.pathname === '/api/display-message' && request.method === 'POST') return this.updateDisplayMessage(request);
     if (url.pathname === '/api/queue' && request.method === 'GET') return Response.json(this.listEntries());
     if (url.pathname.startsWith('/api/queue') && request.method !== 'GET') return this.mutate(request, url);
     if (url.pathname === '/ws') {
@@ -55,5 +58,7 @@ export class WaitingRoom {
   webSocketMessage(ws, message) { try { const payload = JSON.parse(message); if (payload.action === 'ping') ws.send(JSON.stringify({ type: 'pong', id: payload.id })); else if (payload.action === 'refresh') ws.send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() })); } catch { ws.send(JSON.stringify({ type: 'error', message: 'Invalid message' })); } }
   webSocketClose() {} webSocketError() {}
   broadcast(payload) { const data = JSON.stringify(payload); for (const ws of this.ctx.getWebSockets()) ws.send(data); }
+  getDisplayMessage() { return this.sql.exec('SELECT message, active, updated_at AS updatedAt FROM display_message WHERE id=1').toArray()[0] || { message: '', active: 0, updatedAt: null }; }
+  async updateDisplayMessage(request) { const body = await request.json().catch(() => null); if (!body || typeof body.message !== 'string' || body.message.length > 500) return Response.json({ error: 'Message must be 500 characters or fewer' }, { status: 400 }); const now = new Date().toISOString(); this.sql.exec('INSERT INTO display_message (id,message,active,updated_at) VALUES (1,?,?,?) ON CONFLICT(id) DO UPDATE SET message=excluded.message, active=excluded.active, updated_at=excluded.updated_at', body.message.trim(), body.active ? 1 : 0, now); this.broadcast({ type: 'display-message.updated' }); return Response.json(this.getDisplayMessage()); }
   listEntries() { return this.sql.exec(`SELECT id,first_name AS firstName,last_name AS lastName,appointment_time AS appointmentTime,check_in_time AS checkInTime,status,created_at AS createdAt,updated_at AS updatedAt FROM queue_entries ORDER BY CASE WHEN appointment_time IS NULL THEN 1 ELSE 0 END,appointment_time ASC,check_in_time ASC,id ASC`).toArray(); }
 }

@@ -102,6 +102,14 @@ export default {
       return response;
     }
 
+    if (url.pathname === '/api/display-message') {
+      const isHuman = Boolean(identity && role && ['admin', 'intake'].includes(role));
+      const permission = isHuman ? null : await devicePermission(request, env, requestedPermission(request));
+      if (request.method === 'GET' && (isHuman || permission === 'tv')) return queueStub(env).fetch(request);
+      if (request.method === 'POST' && isHuman) return queueStub(env).fetch(request);
+      return permission ? forbidden() : unauthorized('Authorization required', request, env);
+    }
+
     const isQueueApi = url.pathname === '/api/queue' || url.pathname.startsWith('/api/queue/');
     const isWebSocket = url.pathname === '/ws';
     if (isQueueApi || isWebSocket) {

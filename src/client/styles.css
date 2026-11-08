@@ -22,7 +22,7 @@ button:hover:not(:disabled) { filter:brightness(1.1); } .btn-primary { backgroun
 .pairing-page h1 { font-size:2rem; }
 .pairing-page h2 { font-size:1.2rem; font-weight:500; }
 .pairing-code { padding:1rem 1.5rem; border-radius:12px; background:#fff; color:var(--primary); font-size:clamp(2.5rem, 10vw, 5rem); font-weight:800; letter-spacing:.18em; box-shadow:0 4px 20px rgba(0,0,0,.2); }
-.pairing-page p { max-width:32rem; font-size:1rem; opacity:.8; }
+.pairing-page p { max-width:32rem; font-size:1rem; opacity:.8; } .message-screen { padding-bottom:3rem; } .display-message { max-width:1100px; margin:8vh auto 0; padding:2rem; text-align:center; font-size:clamp(2rem, 6vw, 5rem); font-weight:700; line-height:1.2; } .device-panel textarea { width:100%; min-height:8rem; resize:vertical; border:1px solid var(--border-color); border-radius:7px; padding:10px; font:inherit; margin-bottom:.8rem; }
 
 .hamburger-button { background:transparent; color:var(--primary); border:1px solid #c7ced8; padding:6px 12px; font-size:.8rem; }
 .menu-backdrop { position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.35); }
