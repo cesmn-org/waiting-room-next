@@ -5,7 +5,20 @@ export { WaitingRoom };
 const queueId = 'main-queue';
 const DEVICE_COOKIE = 'waiting_room_device';
 
-function unauthorized(message = 'Authentication required') { return Response.json({ error: message }, { status: 401 }); }
+function unauthorized(message = 'Authentication required', request, env) {
+  const response = Response.json({ error: message }, { status: 401 });
+  if (request && env) {
+    response.headers.set('X-Waiting-Room-Auth-Debug', JSON.stringify({
+      accessJwtHeader: Boolean(request.headers.get('cf-access-jwt-assertion')),
+      accessCookie: Boolean(request.headers.get('Cookie')?.includes('CF_Authorization=')),
+      teamDomainConfigured: Boolean(env.ACCESS_TEAM_DOMAIN),
+      audienceConfigured: Boolean(env.ACCESS_AUDIENCE),
+      adminEmailConfigured: Boolean(env.ADMIN_EMAIL),
+      intakeEmailConfigured: Boolean(env.INTAKE_EMAIL),
+    }));
+  }
+  return response;
+}
 function forbidden() { return Response.json({ error: 'Insufficient permissions' }, { status: 403 }); }
 function cookie(request) { return request.headers.get('Cookie')?.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${DEVICE_COOKIE}=`))?.slice(DEVICE_COOKIE.length + 1) || null; }
 function queueStub(env) { return env.QUEUE.get(env.QUEUE.idFromName(queueId)); }
@@ -29,23 +42,23 @@ export default {
       if (identity && role) return Response.json({ email: identity.email, role });
       const permission = await devicePermission(request, env);
       if (permission) return Response.json({ email: null, role: permission });
-      return unauthorized('Valid Cloudflare Access authentication or device pairing required');
+      return unauthorized('Valid Cloudflare Access authentication or device pairing required', request, env);
     }
 
     if (url.pathname === '/api/devices' || url.pathname === '/api/devices/revoke') {
-      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required');
+      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
       if (!['admin', 'intake'].includes(role)) return forbidden();
       return queueStub(env).fetch(request);
     }
 
     if (url.pathname === '/api/pair/pending') {
-      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required');
+      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
       if (!['admin', 'intake'].includes(role)) return forbidden();
       return queueStub(env).fetch(request);
     }
 
     if (url.pathname === '/api/pair/approve' || url.pathname === '/api/pair/deny') {
-      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required');
+      if (!identity || !role) return unauthorized('Valid Cloudflare Access authentication required', request, env);
       if (!['admin', 'intake'].includes(role)) return forbidden();
       const stub = queueStub(env);
       const headers = new Headers(request.headers);
