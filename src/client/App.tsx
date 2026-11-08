@@ -68,7 +68,7 @@ export function App() {
     if (mode === 'tv' || mode === 'tablet') { if (!deviceReady) return; } connect(); return () => { stopped = true; if (retry) clearTimeout(retry); clear(); socket?.close(); };
   }, [mode, deviceReady]);
 
-  async function setStatus(entry: QueueEntry, status: QueueStatus) { const previous = entries; setEntries(entries.map((e) => e.id === entry.id ? { ...e, status } : e)); try { await mutateQueue('PATCH', `/api/queue/${entry.id}`, { status }); } catch { setEntries(previous); setError('Update failed; the change was reverted.'); } }
+  async function setStatus(entry: QueueEntry, status: QueueStatus) { const previous = entries; setEntries(entries.map((e) => e.id === entry.id ? { ...e, status } : e)); try { await mutateQueue('PATCH', `/api/queue/${entry.id}?device=${mode}`, { status }); } catch { setEntries(previous); setError('Update failed; the change was reverted.'); } }
   async function remove(entry: QueueEntry) { const previous = entries; setEntries(entries.filter((e) => e.id !== entry.id)); try { await mutateQueue('DELETE', `/api/queue/${entry.id}`); } catch { setEntries(previous); setError('Delete failed; the client was restored.'); } }
 
   async function editEntry(updated: QueueEntry) { const previous = entries; setEntries(entries.map((entry) => entry.id === updated.id ? updated : entry)); try { await mutateQueue('PATCH', `/api/queue/${updated.id}`, { firstName: updated.firstName, lastName: updated.lastName, appointmentTime: updated.appointmentTime, checkInTime: updated.checkInTime, status: updated.status }); } catch { setEntries(previous); setError('Update failed; the change was reverted.'); } }
