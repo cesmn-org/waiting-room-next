@@ -180,6 +180,7 @@ export default {
         if (!permission) return unauthorized('Device pairing required');
         if (isMutation && permission !== 'tablet') return forbidden();
         if (
+          isMutation &&
           permission === 'tablet' &&
           !(request.method === 'PATCH' && /^\/api\/queue\/\d+$/.test(url.pathname))
         )
