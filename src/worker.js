@@ -1,5 +1,5 @@
 import { WaitingRoom } from './room.js';
-import { accessIdentity, humanRole } from './access.js';
+import { accessDiagnostics, accessIdentity, humanRole } from './access.js';
 
 export { WaitingRoom };
 const queueId = 'main-queue';
@@ -15,6 +15,7 @@ function unauthorized(message = 'Authentication required', request, env) {
       audienceConfigured: Boolean(env.ACCESS_AUDIENCE),
       adminEmailConfigured: Boolean(env.ADMIN_EMAIL),
       intakeEmailConfigured: Boolean(env.INTAKE_EMAIL),
+      jwt: await accessDiagnostics(request, env),
     }));
   }
   return response;
