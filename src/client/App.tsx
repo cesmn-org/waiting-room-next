@@ -86,6 +86,7 @@ function DeviceAccessMenu() { const [open, setOpen] = useState(false); return <>
 
 function DeviceCodeInput({ value, onChange, disabled }: { value: string; onChange: (value: string) => void; disabled?: boolean }) {
   const [characters, setCharacters] = useState(() => value.replace(/[^A-Z0-9]/gi, '').slice(0, 8).split(''));
+  useEffect(() => { setCharacters(value.replace(/[^A-Z0-9]/gi, '').slice(0, 8).split('')); }, [value]);
   const cleanValue = characters.join('');
   function update(index: number, raw: string) { const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, ''); const next = [...characters]; next[index] = clean.slice(-1); setCharacters(next); onChange(next.join('')); if (clean && index < 7) document.getElementById(`device-code-${index + 1}`)?.focus(); }
   function handleKey(index: number, event: React.KeyboardEvent<HTMLInputElement>) { if (event.key === 'Backspace' && !characters[index] && index > 0) document.getElementById(`device-code-${index - 1}`)?.focus(); }
