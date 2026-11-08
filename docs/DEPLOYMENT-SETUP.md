@@ -18,10 +18,10 @@ The token is used only by GitHub Actions and should not be committed to the repo
 
 In the GitHub repository, open **Settings → Secrets and variables → Actions → New repository secret** and add:
 
-| Secret | Value |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | The scoped Cloudflare API token |
-| `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account ID |
+| Secret                  | Value                           |
+| ----------------------- | ------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | The scoped Cloudflare API token |
+| `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account ID       |
 
 ### 4. Connect this directory to GitHub
 
