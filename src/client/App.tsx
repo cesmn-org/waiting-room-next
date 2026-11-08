@@ -36,20 +36,24 @@ export function App() {
   const walkIns = useMemo(() => entries.filter((entry) => entry.status === 'checked_in' && !entry.appointmentTime), [entries]);
 
   useEffect(() => {
-    const heartbeatIntervalMs = 2000;
-    const heartbeatTimeoutMs = 1500;
-    const reconnectDelayMs = 750;
+    const heartbeatIntervalMs = 1000;
+    const heartbeatTimeoutMs = 500;
+    const reconnectDelayMs = 500;
     let retry: number | undefined;
     let heartbeat: number | undefined;
     let heartbeatTimeout: number | undefined;
     let socket: WebSocket;
     let stopped = false;
+    let reconnectImmediately = true;
+    let heartbeatId = 0;
+    let awaitingHeartbeatId: number | undefined;
 
     const clearHeartbeat = () => {
       if (heartbeat) window.clearInterval(heartbeat);
       if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
       heartbeat = undefined;
       heartbeatTimeout = undefined;
+      awaitingHeartbeatId = undefined;
     };
 
     const markDisconnected = () => {
@@ -63,17 +67,26 @@ export function App() {
       socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
       socket.onopen = () => {
         setConnected(true);
-        heartbeat = window.setInterval(() => {
+        reconnectImmediately = true;
+        const sendHeartbeat = () => {
           if (socket.readyState !== WebSocket.OPEN) return;
-          socket.send(JSON.stringify({ action: 'ping' }));
-          heartbeatTimeout = window.setTimeout(markDisconnected, heartbeatTimeoutMs);
-        }, heartbeatIntervalMs);
+          const id = ++heartbeatId;
+          awaitingHeartbeatId = id;
+          socket.send(JSON.stringify({ action: 'ping', id }));
+          if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
+          heartbeatTimeout = window.setTimeout(() => {
+            if (awaitingHeartbeatId === id) markDisconnected();
+          }, heartbeatTimeoutMs);
+        };
+        sendHeartbeat();
+        heartbeat = window.setInterval(sendHeartbeat, heartbeatIntervalMs);
       };
       socket.onmessage = (event) => {
-        const message = JSON.parse(event.data) as { type: string; entries?: QueueEntry[] };
-        if (message.type === 'pong') {
+        const message = JSON.parse(event.data) as { type: string; id?: number; entries?: QueueEntry[] };
+        if (message.type === 'pong' && message.id === awaitingHeartbeatId) {
           if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
           heartbeatTimeout = undefined;
+          awaitingHeartbeatId = undefined;
         } else if (message.type === 'queue.snapshot' && message.entries) {
           setEntries(message.entries);
         }
@@ -81,7 +94,12 @@ export function App() {
       socket.onclose = () => {
         setConnected(false);
         clearHeartbeat();
-        if (!stopped) retry = window.setTimeout(connect, reconnectDelayMs);
+        if (!stopped) {
+          if (retry) window.clearTimeout(retry);
+          const delay = reconnectImmediately ? 0 : reconnectDelayMs;
+          reconnectImmediately = false;
+          retry = window.setTimeout(connect, delay);
+        }
       };
       socket.onerror = () => markDisconnected();
     };

@@ -43,7 +43,7 @@ export class WaitingRoom {
     try {
       const payload = JSON.parse(message);
       if (payload.action === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' }));
+        ws.send(JSON.stringify({ type: 'pong', id: payload.id }));
       } else if (payload.action === 'refresh') {
         ws.send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
       }
