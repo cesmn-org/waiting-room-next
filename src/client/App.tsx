@@ -435,6 +435,14 @@ export function App() {
         <div className="display-message">{displayMessage.message}</div>
       </main>
     );
+  if ((mode === 'tv' || mode === 'tablet') && pairingStatus === 'revoked')
+    return (
+      <main className={mode === 'tv' ? 'pairing-page tv-pairing' : 'pairing-page'}>
+        <h1>Access revoked</h1>
+        <p>This device must be paired again.</p>
+        <button onClick={() => setPairingAttempt((attempt) => attempt + 1)}>Try again</button>
+      </main>
+    );
   if ((mode === 'tv' || mode === 'tablet') && !deviceReady)
     return (
       <main className={mode === 'tv' ? 'pairing-page tv-pairing' : 'pairing-page'}>
@@ -466,13 +474,6 @@ export function App() {
             Try again
           </button>
         )}
-      </main>
-    );
-  if ((mode === 'tv' || mode === 'tablet') && pairingStatus === 'revoked')
-    return (
-      <main className={mode === 'tv' ? 'pairing-page tv-pairing' : 'pairing-page'}>
-        <h1>Access revoked</h1>
-        <p>This device must be paired again.</p>
       </main>
     );
   if (mode === 'admin')
