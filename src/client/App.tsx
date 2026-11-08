@@ -237,6 +237,11 @@ export function App() {
               body: JSON.stringify({ deviceCode: pair.deviceCode }),
             });
             if (!complete.ok) throw new Error('Unable to complete pairing.');
+            const verified = await fetch('/api/pair/session', {
+              headers: { 'X-Device-Permission': mode },
+            });
+            if (!verified.ok)
+              throw new Error('Pairing completed, but the device cookie was not accepted.');
             setDeviceReady(true);
             setPairingStatus('approved');
             break;
@@ -316,7 +321,7 @@ export function App() {
         } else if (message.type === 'display-message.updated') loadDisplayMessage();
         else if (message.type === 'queue.updated') refresh();
       };
-      socket.onclose = (event) => {
+      socket.onclose = async (event) => {
         logNetwork('websocket closed', {
           mode,
           code: event.code,
@@ -328,6 +333,21 @@ export function App() {
           setDeviceReady(false);
           setPairingStatus('revoked');
           return;
+        }
+        if ((mode === 'tv' || mode === 'tablet') && !stopped) {
+          try {
+            const session = await fetch('/api/pair/session', {
+              headers: { 'X-Device-Permission': mode },
+            });
+            if (!session.ok) {
+              setDeviceReady(false);
+              setPairingStatus('starting');
+              setPairingAttempt((attempt) => attempt + 1);
+              return;
+            }
+          } catch {
+            // Keep the current pairing state during a transient network failure.
+          }
         }
         if (!stopped) {
           retry = window.setTimeout(connect, reconnectDelay + Math.random() * reconnectDelay);
