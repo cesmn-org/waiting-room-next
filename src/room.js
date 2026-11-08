@@ -38,15 +38,17 @@ export class WaitingRoom {
   }
 
   async mutate(request, url) {
-    const body = await request.json().catch(() => null);
     const mutationId = request.headers.get('X-Mutation-Id');
-    if (!mutationId || !body) return Response.json({ error: 'Mutation ID and JSON body are required' }, { status: 400 });
+    if (!mutationId) return Response.json({ error: 'Mutation ID is required' }, { status: 400 });
     const prior = this.sql.exec('SELECT response FROM mutations WHERE mutation_id = ?', mutationId).toArray()[0];
     if (prior) return Response.json(JSON.parse(prior.response));
 
+    const body = request.method === 'DELETE' ? {} : await request.json().catch(() => null);
+    if (!body) return Response.json({ error: 'A valid JSON body is required' }, { status: 400 });
+
     let result;
-    const entryId = Number(url.pathname.split('/').pop());
     const now = new Date().toISOString();
+    const entryId = Number(url.pathname.split('/').pop());
     if (request.method === 'DELETE' && url.pathname === '/api/queue') {
       this.sql.exec('DELETE FROM queue_entries');
       result = { cleared: true };
