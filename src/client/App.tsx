@@ -5,6 +5,7 @@ import { loadQueue, mutateQueue } from './api';
 type PairingRequest = {
   id: string;
   permission: 'tv' | 'tablet';
+  status: 'pending' | 'approved';
   createdAt: string;
   expiresAt: string;
 };
