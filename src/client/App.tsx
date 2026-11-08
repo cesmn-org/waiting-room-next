@@ -28,4 +28,26 @@ export function App() {
   return <main><header><h1>Waiting Room</h1><Clock /><Connection connected={connected} />{error && <p className="error">{error}</p>}</header><div className="queue-grid"><QueueList title="Appointments" entries={appointments} action={mode === 'tablet' ? (e) => <button onClick={() => setStatus(e, 'shopping')}>Call to shop</button> : undefined} /><QueueList title="Walk-ins" entries={walkIns} action={mode === 'tablet' ? (e) => <button onClick={() => setStatus(e, 'shopping')}>Call to shop</button> : undefined} />{mode === 'tablet' && <QueueList title="Shopping / undo" entries={shopping} action={(e) => <button onClick={() => setStatus(e, 'checked_in')}>Undo</button>} />}</div></main>;
 }
 
-function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { entries: QueueEntry[]; connected: boolean; onAdded: () => void; onStatus: (entry: QueueEntry, status: QueueStatus) => void; onDelete: (entry: QueueEntry) => void; error: string }) { const [firstName, setFirstName] = useState(''); const [lastName, setLastName] = useState(''); const [appointmentTime, setAppointmentTime] = useState(''); const [checkInTime, setCheckInTime] = useState(() => new Date().toISOString().slice(0, 16)); const [saving, setSaving] = useState(false); async function submit(event: FormEvent) { event.preventDefault(); setSaving(true); try { await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: new Date(checkInTime).toISOString() }); setFirstName(''); setLastName(''); setAppointmentTime(''); onAdded(); } finally { setSaving(false); } } return <main><header><h1>Intake</h1><Connection connected={connected} />{error && <p className="error">{error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time (leave blank for walk-in)<input type="datetime-local" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} /></label><label>Check-in time<input required type="datetime-local" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} /></label><button disabled={!connected || saving}>Add checked-in client</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>; }
+function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { entries: QueueEntry[]; connected: boolean; onAdded: () => void; onStatus: (entry: QueueEntry, status: QueueStatus) => void; onDelete: (entry: QueueEntry) => void; error: string }) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [appointmentTime, setAppointmentTime] = useState('');
+  const [checkInTime, setCheckInTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setFormError('');
+    setSaving(true);
+    try {
+      await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: new Date(checkInTime).toISOString() });
+      setFirstName(''); setLastName(''); setAppointmentTime('');
+      onAdded();
+    } catch (submitError) {
+      setFormError(submitError instanceof Error ? submitError.message : 'Unable to add client.');
+    } finally { setSaving(false); }
+  }
+
+  return <main><header><h1>Intake</h1><Connection connected={connected} />{(error || formError) && <p className="error">{formError || error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time (leave blank for walk-in)<input type="datetime-local" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} /></label><label>Check-in time<input required type="datetime-local" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} /></label><button disabled={!connected || saving}>{saving ? 'Adding…' : 'Add checked-in client'}</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>;
+}
