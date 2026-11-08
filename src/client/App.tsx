@@ -973,7 +973,6 @@ function Intake({
   onAdded: () => void;
   onDelete: (entry: QueueEntry) => void;
   onEdit: (entry: QueueEntry) => void;
-  onDelete: (entry: QueueEntry) => void;
   onClear: () => void;
   userEmail: string;
   error: string;
