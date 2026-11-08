@@ -161,6 +161,15 @@ export default {
 
     const isQueueApi = url.pathname === '/api/queue' || url.pathname.startsWith('/api/queue/');
     const isWebSocket = url.pathname === '/ws';
+    if (isWebSocket && !identity) {
+      const permission = requestedPermission(request);
+      const deviceCredential = cookie(request, permission);
+      if (!permission || !deviceCredential) return unauthorized('Device pairing required');
+      const headers = new Headers(request.headers);
+      headers.set('X-Device-Credential', deviceCredential);
+      headers.set('X-Device-Permission', permission);
+      return queueStub(env).fetch(new Request(request, { headers }));
+    }
     if (isQueueApi || isWebSocket) {
       const isMutation = ['POST', 'PATCH', 'DELETE'].includes(request.method);
       let permission = null;
