@@ -11,10 +11,15 @@ const appointmentTimes = Array.from({ length: 58 }, (_, index) => {
   return { value, label };
 });
 
+function localDateTimeValue(date = new Date()) {
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
+}
+
 function displayName(entry: QueueEntry) { return `${entry.firstName} ${entry.lastName.charAt(0)}.`; }
 function Clock() { const [now, setNow] = useState(() => new Date()); useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []); return <p className="clock">{new Intl.DateTimeFormat(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(now)}</p>; }
 function QueueList({ title, entries, action }: { title: string; entries: QueueEntry[]; action?: (entry: QueueEntry) => ReactNode }) { return <section className="queue-section"><h2>{title}</h2>{entries.length === 0 ? <p className="empty">No clients</p> : <ol>{entries.map((entry) => <li key={entry.id}><span>{displayName(entry)}</span>{action?.(entry)}</li>)}</ol>}</section>; }
-function Connection({ connected }: { connected: boolean }) { return <p className={connected ? 'connection live' : 'connection offline'}>{connected ? 'Live' : 'Connection lost. Reconnecting…'}</p>; }
+function Connection({ connected }: { connected: boolean }) { return connected ? null : <p className="connection offline">Connection lost. Reconnecting…</p>; }
 
 export function App() {
   const mode = window.location.pathname.startsWith('/intake') ? 'intake' : window.location.pathname.startsWith('/tablet') ? 'tablet' : window.location.pathname.startsWith('/host') ? 'tablet' : 'tv';
@@ -41,7 +46,6 @@ function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { en
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('');
-  const [checkInTime, setCheckInTime] = useState(() => new Date().toISOString().slice(0, 16));
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -50,7 +54,7 @@ function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { en
     setFormError('');
     setSaving(true);
     try {
-      await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: new Date(checkInTime).toISOString() });
+      await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: new Date(localDateTimeValue()).toISOString() });
       setFirstName(''); setLastName(''); setAppointmentTime('');
       onAdded();
     } catch (submitError) {
@@ -58,5 +62,5 @@ function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { en
     } finally { setSaving(false); }
   }
 
-  return <main><header><h1>Intake</h1><Connection connected={connected} />{(error || formError) && <p className="error">{formError || error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time<select value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)}><option value="">Walk-in</option>{appointmentTimes.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label><label>Check-in time<input required type="datetime-local" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} /></label><button disabled={!connected || saving}>{saving ? 'Adding…' : 'Add checked-in client'}</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>;
+  return <main className="intake-page"><header className="intake-header"><h1>Intake</h1><Connection connected={connected} />{(error || formError) && <p className="error">{formError || error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time<select value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)}><option value="">Walk-in</option>{appointmentTimes.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label><button disabled={!connected || saving}>{saving ? 'Adding…' : 'Add checked-in client'}</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>;
 }

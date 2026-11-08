@@ -10,6 +10,10 @@ body { margin: 0; min-width: 320px; min-height: 100vh; }
 main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
 header { margin-bottom: 2rem; }
 h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); }
+.intake-page { max-width: 1280px; padding: .75rem 1.25rem 1.25rem; }
+.intake-header { margin-bottom: .6rem; }
+.intake-header h1 { font-size: 1.5rem; }
+.intake-page h2 { margin: 1rem 0 .5rem; }
 .clock { font-size: 1.2rem; margin: .5rem 0 1rem; }
 .connection { display: inline-block; padding: .7rem 1rem; border-radius: .5rem; font-weight: 700; }
 .connection.live { background: #dff5e5; color: #1d6b38; }
@@ -22,11 +26,13 @@ li { padding: .8rem 0; border-bottom: 1px solid #e5ebf0; font-size: 1.35rem; dis
 button { border: 0; border-radius: .4rem; padding: .55rem .8rem; background: #1769aa; color: white; cursor: pointer; font: inherit; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .error { color: #8b1e1e; background: #ffdede; padding: .7rem 1rem; border-radius: .5rem; }
-.client-form { display: grid; gap: 1rem; max-width: 38rem; background: white; padding: 1.5rem; border-radius: .75rem; }
+.client-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: .65rem; align-items: end; max-width: none; background: white; padding: .8rem; border-radius: .75rem; }
+.client-form button { white-space: nowrap; }
 label { display: grid; gap: .35rem; font-weight: 600; }
 input, select { padding: .65rem; border: 1px solid #b7c5d0; border-radius: .35rem; font: inherit; background: white; }
 .intake-list { list-style: none; padding: 0; background: white; border-radius: .75rem; }
 .intake-list li { flex-wrap: wrap; }
 .intake-list span { color: #64788a; font-size: .9rem; }
 .empty { color: #64788a; }
-@media (max-width: 650px) { main { padding: 1rem; } .queue-grid { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { main { padding: 1rem; } .queue-grid { grid-template-columns: 1fr; } .client-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .client-form button { grid-column: 1 / -1; } }
+@media (max-width: 420px) { .client-form { grid-template-columns: 1fr; } .client-form button { grid-column: auto; } }
