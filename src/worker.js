@@ -5,7 +5,7 @@ export { WaitingRoom };
 const queueId = 'main-queue';
 const DEVICE_COOKIE = 'waiting_room_device';
 
-function unauthorized(message = 'Authentication required', request, env) {
+async function unauthorized(message = 'Authentication required', request, env) {
   const response = Response.json({ error: message }, { status: 401 });
   if (request && env) {
     response.headers.set('X-Waiting-Room-Auth-Debug', JSON.stringify({
