@@ -44,10 +44,10 @@ function Connection({ connected }: { connected: boolean }) { return connected ? 
 
 export function App() {
   const mode = window.location.pathname.startsWith('/intake') ? 'intake' : window.location.pathname.startsWith('/tablet') ? 'tablet' : window.location.pathname.startsWith('/host') ? 'tablet' : 'tv';
-  const [entries, setEntries] = useState<QueueEntry[]>([]); const [connected, setConnected] = useState(false); const [error, setError] = useState(''); const [userEmail, setUserEmail] = useState('');
+  const [entries, setEntries] = useState<QueueEntry[]>([]); const [connected, setConnected] = useState(false); const [error, setError] = useState(''); const [userEmail, setUserEmail] = useState(''); const [sessionChecked, setSessionChecked] = useState(mode !== 'intake' && mode !== 'tablet');
   const appointments = useMemo(() => entries.filter((e) => e.status === 'checked_in' && e.appointmentTime), [entries]); const walkIns = useMemo(() => entries.filter((e) => e.status === 'checked_in' && !e.appointmentTime), [entries]); const shopping = useMemo(() => entries.filter((e) => e.status === 'shopping'), [entries]);
   const refresh = () => loadQueue().then(setEntries).catch(() => setError('Unable to load the queue.'));
-  useEffect(() => { if (mode === 'intake') fetch('/api/session').then((response) => response.json() as Promise<{ email: string | null }>).then((session) => setUserEmail(session.email || '')).catch(() => undefined); }, [mode]);
+  useEffect(() => { if (mode === 'intake' || mode === 'tablet') fetch('/api/session').then(async (response) => { if (!response.ok) throw new Error('Staff authentication required'); return response.json() as Promise<{ email: string }>; }).then((session) => { setUserEmail(session.email); setSessionChecked(true); }).catch(() => { setError('Staff authentication required.'); setSessionChecked(true); }); }, [mode]);
 
   useEffect(() => {
     let retry: number | undefined; let heartbeat: number | undefined; let timeout: number | undefined; let socket: WebSocket; let stopped = false; let reconnectImmediately = true; let heartbeatId = 0; let awaiting: number | undefined;
@@ -62,6 +62,7 @@ export function App() {
 
   async function editEntry(updated: QueueEntry) { const previous = entries; setEntries(entries.map((entry) => entry.id === updated.id ? updated : entry)); try { await mutateQueue('PATCH', `/api/queue/${updated.id}`, { firstName: updated.firstName, lastName: updated.lastName, appointmentTime: updated.appointmentTime, checkInTime: updated.checkInTime, status: updated.status }); } catch { setEntries(previous); setError('Update failed; the change was reverted.'); } }
 
+  if ((mode === 'intake' || mode === 'tablet') && !sessionChecked) return <main className="auth-loading">Checking staff access…</main>;
   if (mode === 'intake') return <Intake entries={entries} connected={connected} onAdded={refresh} onStatus={setStatus} onDelete={remove} onEdit={editEntry} onClear={refresh} userEmail={userEmail} error={error} />;
   return <main className={mode === 'tablet' ? 'dark-app' : 'display-app'}><header className="app-header"><h1 className="header-title">Waiting Room</h1><div className="header-right"><Clock /><Connection connected={connected} /></div></header>{error && <p className="error">{error}</p>}<div className="queue-grid"><QueueList title="Appointments" entries={appointments} details={mode === 'tablet'} action={mode === 'tablet' ? (e) => <button className="shop-btn" onClick={() => setStatus(e, 'shopping')}>Call to shop</button> : undefined} /><QueueList title="Walk-ins" entries={walkIns} details={mode === 'tablet'} action={mode === 'tablet' ? (e) => <button className="shop-btn" onClick={() => setStatus(e, 'shopping')}>Call to shop</button> : undefined} />{mode === 'tablet' && <QueueList title="Shopping / undo" entries={shopping} action={(e) => <button className="shop-btn" onClick={() => setStatus(e, 'checked_in')}>Undo</button>} />}</div></main>;
 }
