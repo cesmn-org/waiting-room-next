@@ -887,20 +887,22 @@ function DeviceAccessPanel() {
                       }
                       disabled={working}
                     />
+                    <div className="message-actions">
+                      <button
+                        disabled={working || (codes[pair.id] || '').length !== 8}
+                        onClick={() => decide(pair.id, codes[pair.id] || '', 'approve')}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="secondary-button"
+                        disabled={working}
+                        onClick={() => cancelPairing(pair.id)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </span>
-                  <button
-                    disabled={working || (codes[pair.id] || '').length !== 8}
-                    onClick={() => decide(pair.id, codes[pair.id] || '', 'approve')}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={working}
-                    onClick={() => cancelPairing(pair.id)}
-                  >
-                    Cancel
-                  </button>
                 </div>
               ) : (
                 <div className="device-row" key={pair.id}>
