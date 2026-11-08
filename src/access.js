@@ -6,6 +6,11 @@ function base64UrlToBytes(value) {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
+function accessCookie(request) {
+  const value = request.headers.get('Cookie')?.split(';').map((part) => part.trim()).find((part) => part.startsWith('CF_Authorization='));
+  return value ? decodeURIComponent(value.slice('CF_Authorization='.length)) : null;
+}
+
 function decodePart(value) {
   return JSON.parse(new TextDecoder().decode(base64UrlToBytes(value)));
 }
@@ -22,7 +27,8 @@ async function getKeys(teamDomain) {
 }
 
 export async function accessIdentity(request, env) {
-  const assertion = request.headers.get('cf-access-jwt-assertion');
+  const assertion = request.headers.get('cf-access-jwt-assertion') || accessCookie(request);
+
   const teamDomain = env.ACCESS_TEAM_DOMAIN?.trim().replace(/\/$/, '');
   const audience = env.ACCESS_AUDIENCE?.trim();
   if (!assertion || !teamDomain || !audience) return null;

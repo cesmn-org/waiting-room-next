@@ -38,6 +38,18 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Sync Access configuration secrets
+        env:
+          ACCESS_ADMIN_EMAIL: ${{ secrets.CLOUDFLARE_ACCESS_ADMIN_EMAIL }}
+          ACCESS_AUDIENCE: ${{ secrets.CLOUDFLARE_ACCESS_AUDIENCE }}
+          ACCESS_INTAKE_EMAIL: ${{ secrets.CLOUDFLARE_ACCESS_INTAKE_EMAIL }}
+          ACCESS_TEAM_DOMAIN: ${{ secrets.CLOUDFLARE_ACCESS_TEAM_DOMAIN }}
+        run: |
+          printf '%s' "$ACCESS_ADMIN_EMAIL" | npx wrangler secret put ADMIN_EMAIL
+          printf '%s' "$ACCESS_AUDIENCE" | npx wrangler secret put ACCESS_AUDIENCE
+          printf '%s' "$ACCESS_INTAKE_EMAIL" | npx wrangler secret put INTAKE_EMAIL
+          printf '%s' "$ACCESS_TEAM_DOMAIN" | npx wrangler secret put ACCESS_TEAM_DOMAIN
+
       - name: Deploy with Wrangler
         uses: cloudflare/wrangler-action@v3
         with:
