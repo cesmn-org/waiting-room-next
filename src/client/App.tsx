@@ -211,6 +211,7 @@ export function App() {
         }
         const pairResponse = await fetch('/api/pair', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ permission: mode }),
         });
@@ -234,6 +235,7 @@ export function App() {
           if (status.status === 'approved') {
             const complete = await fetch('/api/pair/complete', {
               method: 'POST',
+              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ deviceCode: pair.deviceCode }),
             });
