@@ -11,9 +11,9 @@ const CREATE_TABLE = `
 
 const encoder = new TextEncoder();
 function randomToken() { const bytes = crypto.getRandomValues(new Uint8Array(32)); return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join(''); }
-function randomUserCode() { const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const bytes = crypto.getRandomValues(new Uint8Array(8)); return `${[...bytes.slice(0, 4)].map((byte) => alphabet[byte % alphabet.length]).join('')}-${[...bytes.slice(4)].map((byte) => alphabet[byte % alphabet.length]).join('')}`; }
+function randomUserCode() { const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const bytes = crypto.getRandomValues(new Uint8Array(8)); return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join(''); }
 async function hashToken(value) { const digest = await crypto.subtle.digest('SHA-256', encoder.encode(value)); return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join(''); }
-function normalizeUserCode(value) { return String(value).toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^(.{4})(.{4})$/, '$1-$2'); }
+function normalizeUserCode(value) { return String(value).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); }
 
 export class WaitingRoom {
   constructor(ctx) { this.ctx = ctx; this.sql = ctx.storage.sql; this.sql.exec(CREATE_TABLE); }
