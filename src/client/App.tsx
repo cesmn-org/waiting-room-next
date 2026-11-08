@@ -192,6 +192,7 @@ export function App() {
       const startPairing = async () => {
         try {
           const response = await fetch('/api/pair/session', {
+            credentials: 'same-origin',
             headers: { 'X-Device-Permission': mode },
           });
           if (response.ok) {
@@ -238,6 +239,7 @@ export function App() {
             });
             if (!complete.ok) throw new Error('Unable to complete pairing.');
             const verified = await fetch('/api/pair/session', {
+              credentials: 'same-origin',
               headers: { 'X-Device-Permission': mode },
             });
             if (!verified.ok)
@@ -337,6 +339,7 @@ export function App() {
         if ((mode === 'tv' || mode === 'tablet') && !stopped) {
           try {
             const session = await fetch('/api/pair/session', {
+              credentials: 'same-origin',
               headers: { 'X-Device-Permission': mode },
             });
             if (!session.ok) {
