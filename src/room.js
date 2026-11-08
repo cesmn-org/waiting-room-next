@@ -47,7 +47,10 @@ export class WaitingRoom {
     let result;
     const entryId = Number(url.pathname.split('/').pop());
     const now = new Date().toISOString();
-    if (request.method === 'POST' && url.pathname === '/api/queue') {
+    if (request.method === 'DELETE' && url.pathname === '/api/queue') {
+      this.sql.exec('DELETE FROM queue_entries');
+      result = { cleared: true };
+    } else if (request.method === 'POST' && url.pathname === '/api/queue') {
       if (!body.firstName || !body.lastName || !body.checkInTime) return Response.json({ error: 'Names and check-in time are required' }, { status: 400 });
       this.sql.exec('INSERT INTO queue_entries (first_name,last_name,appointment_time,check_in_time,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)', body.firstName.trim(), body.lastName.trim(), body.appointmentTime || null, body.checkInTime, 'checked_in', now, now);
       result = this.sql.exec('SELECT id FROM queue_entries ORDER BY id DESC LIMIT 1').toArray()[0];
