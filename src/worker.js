@@ -3,7 +3,7 @@ import { accessDiagnostics, accessIdentity, humanRole } from './access.js';
 
 export { WaitingRoom };
 const queueId = 'main-queue';
-const DEVICE_COOKIE = 'waiting_room_device';
+const DEVICE_COOKIE_PREFIX = 'waiting_room_device_';
 
 async function unauthorized(message = 'Authentication required', request, env) {
   const response = Response.json({ error: message }, { status: 401 });
@@ -21,11 +21,12 @@ async function unauthorized(message = 'Authentication required', request, env) {
   return response;
 }
 function forbidden() { return Response.json({ error: 'Insufficient permissions' }, { status: 403 }); }
-function cookie(request) { return request.headers.get('Cookie')?.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${DEVICE_COOKIE}=`))?.slice(DEVICE_COOKIE.length + 1) || null; }
+function requestedPermission(request) { const path = new URL(request.url).pathname; if (path.startsWith('/tablet')) return 'tablet'; if (path.startsWith('/tv')) return 'tv'; const requested = request.headers.get('X-Device-Permission'); return requested === 'tv' || requested === 'tablet' ? requested : null; }
+function cookie(request, permission = requestedPermission(request)) { if (!permission) return null; const name = `${DEVICE_COOKIE_PREFIX}${permission}`; return request.headers.get('Cookie')?.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1) || null; }
 function queueStub(env) { return env.QUEUE.get(env.QUEUE.idFromName(queueId)); }
 
-async function devicePermission(request, env) {
-  const value = cookie(request);
+async function devicePermission(request, env, permission = requestedPermission(request)) {
+  const value = cookie(request, permission);
   if (!value) return null;
   const response = await queueStub(env).fetch(new Request('https://queue.internal/api/device/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: value }) }));
   if (!response.ok) return null;
@@ -40,13 +41,13 @@ export default {
     const isHumanRoute = url.pathname === '/api/session' || url.pathname.startsWith('/api/pair/approve') || url.pathname.startsWith('/api/pair/deny');
 
     if (url.pathname === '/api/pair/session' && request.method === 'GET') {
-      const permission = await devicePermission(request, env);
+      const permission = await devicePermission(request, env, request.headers.get('X-Device-Permission'));
       return permission ? Response.json({ role: permission }) : unauthorized('Device pairing required');
     }
 
     if (url.pathname === '/api/session' && request.method === 'GET') {
       if (identity && role) return Response.json({ email: identity.email, role });
-      const permission = await devicePermission(request, env);
+      const permission = await devicePermission(request, env, requestedPermission(request));
       if (permission) return Response.json({ email: null, role: permission });
       return unauthorized('Valid Cloudflare Access authentication or device pairing required', request, env);
     }
@@ -87,7 +88,8 @@ export default {
         const data = await response.clone().json();
         if (data.credential) {
           const result = Response.json({ ok: true, permission: data.permission });
-          result.headers.append('Set-Cookie', `${DEVICE_COOKIE}=${data.credential}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Strict`);
+          const permission = data.permission;
+          result.headers.append('Set-Cookie', `${DEVICE_COOKIE_PREFIX}${permission}=${data.credential}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Strict`);
           return result;
         }
       }
@@ -108,7 +110,7 @@ export default {
       }
       if (!identity && permission) {
         const headers = new Headers(request.headers);
-        const deviceCredential = cookie(request);
+        const deviceCredential = cookie(request, permission);
         if (deviceCredential) headers.set('X-Device-Credential', deviceCredential);
         return queueStub(env).fetch(new Request(request, { headers }));
       }
