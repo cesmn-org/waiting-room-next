@@ -187,8 +187,18 @@ export function App() {
   useEffect(() => {
     if (mode === 'tv' || mode === 'tablet') {
       let cancelled = false;
+      let restartTimer: number | undefined;
       setDeviceReady(false);
+      setPairingCode('');
       setPairingStatus('starting');
+      const restartPairing = () => {
+        restartTimer = window.setTimeout(() => {
+          if (!cancelled) {
+            setError('');
+            setPairingAttempt((attempt) => attempt + 1);
+          }
+        }, 1500);
+      };
       const startPairing = async () => {
         try {
           const response = await fetch('/api/pair/session', {
@@ -252,6 +262,7 @@ export function App() {
           }
           if (['denied', 'expired', 'invalid'].includes(status.status)) {
             setPairingStatus(status.status);
+            restartPairing();
             break;
           }
         }
@@ -260,10 +271,12 @@ export function App() {
         if (!cancelled) {
           setError(pairError instanceof Error ? pairError.message : 'Unable to pair this device.');
           setPairingStatus('error');
+          restartPairing();
         }
       });
       return () => {
         cancelled = true;
+        if (restartTimer) window.clearTimeout(restartTimer);
       };
     }
   }, [mode, pairingAttempt]);
@@ -335,7 +348,8 @@ export function App() {
         setConnected(false);
         if ((mode === 'tv' || mode === 'tablet') && event.code === 4001) {
           setDeviceReady(false);
-          setPairingStatus('revoked');
+          setPairingStatus('starting');
+          setPairingAttempt((attempt) => attempt + 1);
           return;
         }
         if ((mode === 'tv' || mode === 'tablet') && !stopped) {
@@ -422,14 +436,6 @@ export function App() {
         <div className="display-message">{displayMessage.message}</div>
       </main>
     );
-  if ((mode === 'tv' || mode === 'tablet') && pairingStatus === 'revoked')
-    return (
-      <main className={mode === 'tv' ? 'pairing-page tv-pairing' : 'pairing-page'}>
-        <h1>Access revoked</h1>
-        <p>This device must be paired again.</p>
-        <button onClick={() => setPairingAttempt((attempt) => attempt + 1)}>Try again</button>
-      </main>
-    );
   if ((mode === 'tv' || mode === 'tablet') && !deviceReady)
     return (
       <main className={mode === 'tv' ? 'pairing-page tv-pairing' : 'pairing-page'}>
@@ -451,16 +457,6 @@ export function App() {
                   ? 'Pairing was denied. Reload to try again.'
                   : error || 'Unable to pair this device.'}
         </p>
-        {['denied', 'expired', 'error', 'revoked'].includes(pairingStatus) && (
-          <button
-            onClick={() => {
-              setError('');
-              setPairingAttempt((attempt) => attempt + 1);
-            }}
-          >
-            Try again
-          </button>
-        )}
       </main>
     );
   if (mode === 'admin')
