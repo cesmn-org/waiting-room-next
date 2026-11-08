@@ -170,6 +170,11 @@ export default {
         permission = await devicePermission(request, env);
         if (!permission) return unauthorized('Device pairing required');
         if (isMutation && permission !== 'tablet') return forbidden();
+        if (
+          permission === 'tablet' &&
+          !(request.method === 'PATCH' && /^\/api\/queue\/\d+$/.test(url.pathname))
+        )
+          return forbidden();
       }
       if (!identity && permission) {
         const headers = new Headers(request.headers);

@@ -278,6 +278,9 @@ export class WaitingRoom {
     } else if (request.method === 'PATCH' && Number.isInteger(entryId)) {
       const current = this.sql.exec('SELECT * FROM queue_entries WHERE id=?', entryId).toArray()[0];
       if (!current) return Response.json({ error: 'Client not found' }, { status: 404 });
+      const deviceCredential = request.headers.get('X-Device-Credential');
+      if (deviceCredential && Object.keys(body).some((key) => key !== 'status'))
+        return Response.json({ error: 'Device may only update status' }, { status: 403 });
       const status = body.status ?? current.status;
       if (!['checked_in', 'shopping'].includes(status))
         return Response.json({ error: 'Invalid status' }, { status: 400 });
