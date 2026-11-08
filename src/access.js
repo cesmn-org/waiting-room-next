@@ -1,3 +1,4 @@
+const JWKS_TTL_MS = 60 * 60 * 1000;
 const jwksCache = new Map();
 
 function base64UrlToBytes(value) {
@@ -19,14 +20,15 @@ function decodePart(value) {
 }
 async function getKeys(teamDomain) {
   const cached = jwksCache.get(teamDomain);
-  if (cached) return cached;
+  if (cached && cached.expiresAt > Date.now()) return cached.promise;
   const promise = fetch(`${teamDomain.replace(/\/$/, '')}/cdn-cgi/access/certs`).then(
     async (response) => {
       if (!response.ok) throw new Error(`JWKS HTTP ${response.status}`);
       return response.json();
     },
   );
-  jwksCache.set(teamDomain, promise);
+  promise.catch(() => jwksCache.delete(teamDomain));
+  jwksCache.set(teamDomain, { expiresAt: Date.now() + JWKS_TTL_MS, promise });
   return promise;
 }
 
