@@ -57,6 +57,8 @@ export class WaitingRoom {
       return this.revokeDevice(request);
     if (url.pathname === '/api/pair/approve' && request.method === 'POST')
       return this.approvePairing(request, 'approve');
+    if (url.pathname === '/api/pair/deny' && request.method === 'POST')
+      return this.approvePairing(request, 'deny');
     if (url.pathname === '/api/pair/cancel' && request.method === 'POST')
       return this.cancelPairing(request);
     if (url.pathname === '/api/display-message' && request.method === 'GET')
@@ -261,17 +263,18 @@ export class WaitingRoom {
     } else if (request.method === 'POST' && path === '/api/queue') {
       if (!body.firstName || !body.lastName || !body.checkInTime)
         return Response.json({ error: 'Names and check-in time are required' }, { status: 400 });
-      this.sql.exec(
-        'INSERT INTO queue_entries (first_name,last_name,appointment_time,check_in_time,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
-        body.firstName.trim(),
-        body.lastName.trim(),
-        body.appointmentTime || null,
-        body.checkInTime,
-        'checked_in',
-        now,
-        now,
-      );
-      result = this.sql.exec('SELECT id FROM queue_entries ORDER BY id DESC LIMIT 1').toArray()[0];
+      result = this.sql
+        .exec(
+          'INSERT INTO queue_entries (first_name,last_name,appointment_time,check_in_time,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?) RETURNING id',
+          body.firstName.trim(),
+          body.lastName.trim(),
+          body.appointmentTime || null,
+          body.checkInTime,
+          'checked_in',
+          now,
+          now,
+        )
+        .toArray()[0];
     } else if (request.method === 'PATCH' && Number.isInteger(entryId)) {
       const current = this.sql.exec('SELECT * FROM queue_entries WHERE id=?', entryId).toArray()[0];
       if (!current) return Response.json({ error: 'Client not found' }, { status: 404 });
