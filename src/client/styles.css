@@ -18,6 +18,15 @@ h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); }
 .queue-section { background: white; border-radius: .75rem; padding: 1.5rem; box-shadow: 0 2px 10px #17324d18; }
 h2 { margin-top: 0; }
 ol { margin: 0; padding-left: 2rem; }
-li { padding: .8rem 0; border-bottom: 1px solid #e5ebf0; font-size: 1.35rem; }
+li { padding: .8rem 0; border-bottom: 1px solid #e5ebf0; font-size: 1.35rem; display: flex; gap: .75rem; align-items: center; justify-content: space-between; }
+button { border: 0; border-radius: .4rem; padding: .55rem .8rem; background: #1769aa; color: white; cursor: pointer; font: inherit; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.error { color: #8b1e1e; background: #ffdede; padding: .7rem 1rem; border-radius: .5rem; }
+.client-form { display: grid; gap: 1rem; max-width: 38rem; background: white; padding: 1.5rem; border-radius: .75rem; }
+label { display: grid; gap: .35rem; font-weight: 600; }
+input { padding: .65rem; border: 1px solid #b7c5d0; border-radius: .35rem; font: inherit; }
+.intake-list { list-style: none; padding: 0; background: white; border-radius: .75rem; }
+.intake-list li { flex-wrap: wrap; }
+.intake-list span { color: #64788a; font-size: .9rem; }
 .empty { color: #64788a; }
 @media (max-width: 650px) { main { padding: 1rem; } .queue-grid { grid-template-columns: 1fr; } }

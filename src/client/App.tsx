@@ -1,131 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { QueueEntry } from './types';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import type { QueueEntry, QueueStatus } from './types';
+import { loadQueue, mutateQueue } from './api';
 
-function displayName(entry: QueueEntry): string {
-  return `${entry.firstName} ${entry.lastName.charAt(0)}.`;
-}
-
-function Clock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return <p className="clock">{new Intl.DateTimeFormat(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', second: '2-digit',
-  }).format(now)}</p>;
-}
-
-function QueueList({ title, entries }: { title: string; entries: QueueEntry[] }) {
-  return (
-    <section className="queue-section">
-      <h2>{title}</h2>
-      {entries.length === 0 ? <p className="empty">No clients waiting</p> : (
-        <ol>{entries.map((entry) => <li key={entry.id}>{displayName(entry)}</li>)}</ol>
-      )}
-    </section>
-  );
-}
+function displayName(entry: QueueEntry) { return `${entry.firstName} ${entry.lastName.charAt(0)}.`; }
+function Clock() { const [now, setNow] = useState(() => new Date()); useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []); return <p className="clock">{new Intl.DateTimeFormat(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(now)}</p>; }
+function QueueList({ title, entries, action }: { title: string; entries: QueueEntry[]; action?: (entry: QueueEntry) => ReactNode }) { return <section className="queue-section"><h2>{title}</h2>{entries.length === 0 ? <p className="empty">No clients</p> : <ol>{entries.map((entry) => <li key={entry.id}><span>{displayName(entry)}</span>{action?.(entry)}</li>)}</ol>}</section>; }
+function Connection({ connected }: { connected: boolean }) { return <p className={connected ? 'connection live' : 'connection offline'}>{connected ? 'Live' : 'Connection lost. Reconnecting…'}</p>; }
 
 export function App() {
-  const [entries, setEntries] = useState<QueueEntry[]>([]);
-  const [connected, setConnected] = useState(false);
-
-  const appointments = useMemo(() => entries.filter((entry) => entry.status === 'checked_in' && entry.appointmentTime), [entries]);
-  const walkIns = useMemo(() => entries.filter((entry) => entry.status === 'checked_in' && !entry.appointmentTime), [entries]);
+  const mode = window.location.pathname.startsWith('/intake') ? 'intake' : window.location.pathname.startsWith('/tablet') ? 'tablet' : window.location.pathname.startsWith('/host') ? 'tablet' : 'tv';
+  const [entries, setEntries] = useState<QueueEntry[]>([]); const [connected, setConnected] = useState(false); const [error, setError] = useState('');
+  const appointments = useMemo(() => entries.filter((e) => e.status === 'checked_in' && e.appointmentTime), [entries]); const walkIns = useMemo(() => entries.filter((e) => e.status === 'checked_in' && !e.appointmentTime), [entries]); const shopping = useMemo(() => entries.filter((e) => e.status === 'shopping'), [entries]);
+  const refresh = () => loadQueue().then(setEntries).catch(() => setError('Unable to load the queue.'));
 
   useEffect(() => {
-    const heartbeatIntervalMs = 1000;
-    const heartbeatTimeoutMs = 500;
-    const reconnectDelayMs = 500;
-    let retry: number | undefined;
-    let heartbeat: number | undefined;
-    let heartbeatTimeout: number | undefined;
-    let socket: WebSocket;
-    let stopped = false;
-    let reconnectImmediately = true;
-    let heartbeatId = 0;
-    let awaitingHeartbeatId: number | undefined;
-
-    const clearHeartbeat = () => {
-      if (heartbeat) window.clearInterval(heartbeat);
-      if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
-      heartbeat = undefined;
-      heartbeatTimeout = undefined;
-      awaitingHeartbeatId = undefined;
-    };
-
-    const markDisconnected = () => {
-      setConnected(false);
-      clearHeartbeat();
-      if (socket.readyState === WebSocket.OPEN) socket.close();
-    };
-
-    const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
-      socket.onopen = () => {
-        setConnected(true);
-        reconnectImmediately = true;
-        const sendHeartbeat = () => {
-          if (socket.readyState !== WebSocket.OPEN) return;
-          const id = ++heartbeatId;
-          awaitingHeartbeatId = id;
-          socket.send(JSON.stringify({ action: 'ping', id }));
-          if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
-          heartbeatTimeout = window.setTimeout(() => {
-            if (awaitingHeartbeatId === id) markDisconnected();
-          }, heartbeatTimeoutMs);
-        };
-        sendHeartbeat();
-        heartbeat = window.setInterval(sendHeartbeat, heartbeatIntervalMs);
-      };
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data) as { type: string; id?: number; entries?: QueueEntry[] };
-        if (message.type === 'pong' && message.id === awaitingHeartbeatId) {
-          if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
-          heartbeatTimeout = undefined;
-          awaitingHeartbeatId = undefined;
-        } else if (message.type === 'queue.snapshot' && message.entries) {
-          setEntries(message.entries);
-        }
-      };
-      socket.onclose = () => {
-        setConnected(false);
-        clearHeartbeat();
-        if (!stopped) {
-          if (retry) window.clearTimeout(retry);
-          const delay = reconnectImmediately ? 0 : reconnectDelayMs;
-          reconnectImmediately = false;
-          retry = window.setTimeout(connect, delay);
-        }
-      };
-      socket.onerror = () => markDisconnected();
-    };
-
-    connect();
-    return () => {
-      stopped = true;
-      if (retry) window.clearTimeout(retry);
-      clearHeartbeat();
-      socket?.close();
-    };
+    let retry: number | undefined; let heartbeat: number | undefined; let timeout: number | undefined; let socket: WebSocket; let stopped = false; let reconnectImmediately = true; let heartbeatId = 0; let awaiting: number | undefined;
+    const clear = () => { if (heartbeat) clearInterval(heartbeat); if (timeout) clearTimeout(timeout); heartbeat = undefined; timeout = undefined; awaiting = undefined; };
+    const disconnect = () => { setConnected(false); clear(); if (socket.readyState === WebSocket.OPEN) socket.close(); };
+    const connect = () => { const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'; socket = new WebSocket(`${protocol}//${location.host}/ws`); socket.onopen = () => { setConnected(true); reconnectImmediately = true; refresh(); const beat = () => { if (socket.readyState !== WebSocket.OPEN) return; const id = ++heartbeatId; awaiting = id; socket.send(JSON.stringify({ action: 'ping', id })); if (timeout) clearTimeout(timeout); timeout = window.setTimeout(() => { if (awaiting === id) disconnect(); }, 500); }; beat(); heartbeat = window.setInterval(beat, 1000); }; socket.onmessage = (event) => { const message = JSON.parse(event.data) as { type: string; id?: number; entries?: QueueEntry[] }; if (message.type === 'pong' && message.id === awaiting) { if (timeout) clearTimeout(timeout); timeout = undefined; awaiting = undefined; } else if (message.type === 'queue.snapshot' && message.entries) setEntries(message.entries); else if (message.type === 'queue.updated') refresh(); }; socket.onclose = () => { setConnected(false); clear(); if (!stopped) { if (retry) clearTimeout(retry); retry = window.setTimeout(connect, reconnectImmediately ? 0 : 500); reconnectImmediately = false; } }; socket.onerror = disconnect; };
+    connect(); return () => { stopped = true; if (retry) clearTimeout(retry); clear(); socket?.close(); };
   }, []);
 
-  return (
-    <main>
-      <header>
-        <h1>Waiting Room</h1>
-        <Clock />
-        <p className={connected ? 'connection live' : 'connection offline'}>
-          {connected ? 'Live' : 'Connection lost. Reconnecting…'}
-        </p>
-      </header>
-      <div className="queue-grid">
-        <QueueList title="Appointments" entries={appointments} />
-        <QueueList title="Walk-ins" entries={walkIns} />
-      </div>
-    </main>
-  );
+  async function setStatus(entry: QueueEntry, status: QueueStatus) { const previous = entries; setEntries(entries.map((e) => e.id === entry.id ? { ...e, status } : e)); try { await mutateQueue('PATCH', `/api/queue/${entry.id}`, { status }); } catch { setEntries(previous); setError('Update failed; the change was reverted.'); } }
+  async function remove(entry: QueueEntry) { const previous = entries; setEntries(entries.filter((e) => e.id !== entry.id)); try { await mutateQueue('DELETE', `/api/queue/${entry.id}`); } catch { setEntries(previous); setError('Delete failed; the client was restored.'); } }
+
+  if (mode === 'intake') return <Intake entries={entries} connected={connected} onAdded={refresh} onStatus={setStatus} onDelete={remove} error={error} />;
+  return <main><header><h1>Waiting Room</h1><Clock /><Connection connected={connected} />{error && <p className="error">{error}</p>}</header><div className="queue-grid"><QueueList title="Appointments" entries={appointments} action={mode === 'tablet' ? (e) => <button onClick={() => setStatus(e, 'shopping')}>Call to shop</button> : undefined} /><QueueList title="Walk-ins" entries={walkIns} action={mode === 'tablet' ? (e) => <button onClick={() => setStatus(e, 'shopping')}>Call to shop</button> : undefined} />{mode === 'tablet' && <QueueList title="Shopping / undo" entries={shopping} action={(e) => <button onClick={() => setStatus(e, 'checked_in')}>Undo</button>} />}</div></main>;
 }
+
+function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { entries: QueueEntry[]; connected: boolean; onAdded: () => void; onStatus: (entry: QueueEntry, status: QueueStatus) => void; onDelete: (entry: QueueEntry) => void; error: string }) { const [firstName, setFirstName] = useState(''); const [lastName, setLastName] = useState(''); const [appointmentTime, setAppointmentTime] = useState(''); const [checkInTime, setCheckInTime] = useState(() => new Date().toISOString().slice(0, 16)); const [saving, setSaving] = useState(false); async function submit(event: FormEvent) { event.preventDefault(); setSaving(true); try { await mutateQueue('POST', '/api/queue', { firstName, lastName, appointmentTime: appointmentTime || null, checkInTime: new Date(checkInTime).toISOString() }); setFirstName(''); setLastName(''); setAppointmentTime(''); onAdded(); } finally { setSaving(false); } } return <main><header><h1>Intake</h1><Connection connected={connected} />{error && <p className="error">{error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time (leave blank for walk-in)<input type="datetime-local" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} /></label><label>Check-in time<input required type="datetime-local" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} /></label><button disabled={!connected || saving}>Add checked-in client</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>; }

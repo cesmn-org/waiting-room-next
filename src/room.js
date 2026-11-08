@@ -8,7 +8,12 @@ const CREATE_TABLE = `
     status TEXT NOT NULL CHECK (status IN ('checked_in', 'shopping')),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
-  )
+  );
+  CREATE TABLE IF NOT EXISTS mutations (
+    mutation_id TEXT PRIMARY KEY,
+    response TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
 `;
 
 export class WaitingRoom {
@@ -20,58 +25,63 @@ export class WaitingRoom {
 
   async fetch(request) {
     const url = new URL(request.url);
-
-    if (url.pathname === '/api/queue' && request.method === 'GET') {
-      return Response.json(this.listEntries());
-    }
-
+    if (url.pathname === '/api/queue' && request.method === 'GET') return Response.json(this.listEntries());
+    if (url.pathname.startsWith('/api/queue') && request.method !== 'GET') return this.mutate(request, url);
     if (url.pathname === '/ws') {
-      if (request.headers.get('Upgrade') !== 'websocket') {
-        return new Response('Expected WebSocket upgrade', { status: 426 });
-      }
-
+      if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected WebSocket upgrade', { status: 426 });
       const pair = new WebSocketPair();
       this.ctx.acceptWebSocket(pair[1]);
       pair[1].send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
       return new Response(null, { status: 101, webSocket: pair[0] });
     }
-
     return new Response('Not found', { status: 404 });
+  }
+
+  async mutate(request, url) {
+    const body = await request.json().catch(() => null);
+    const mutationId = request.headers.get('X-Mutation-Id');
+    if (!mutationId || !body) return Response.json({ error: 'Mutation ID and JSON body are required' }, { status: 400 });
+    const prior = this.sql.exec('SELECT response FROM mutations WHERE mutation_id = ?', mutationId).one();
+    if (prior) return Response.json(JSON.parse(prior.response));
+
+    let result;
+    const entryId = Number(url.pathname.split('/').pop());
+    const now = new Date().toISOString();
+    if (request.method === 'POST' && url.pathname === '/api/queue') {
+      if (!body.firstName || !body.lastName || !body.checkInTime) return Response.json({ error: 'Names and check-in time are required' }, { status: 400 });
+      this.sql.exec('INSERT INTO queue_entries (first_name,last_name,appointment_time,check_in_time,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)', body.firstName.trim(), body.lastName.trim(), body.appointmentTime || null, body.checkInTime, 'checked_in', now, now);
+      result = this.sql.exec('SELECT last_insert_rowid() AS id').one();
+    } else if (request.method === 'PATCH' && Number.isInteger(entryId)) {
+      if (!['checked_in', 'shopping'].includes(body.status)) return Response.json({ error: 'Invalid status' }, { status: 400 });
+      this.sql.exec('UPDATE queue_entries SET status=?, updated_at=? WHERE id=?', body.status, now, entryId);
+      result = { id: entryId };
+    } else if (request.method === 'DELETE' && Number.isInteger(entryId)) {
+      this.sql.exec('DELETE FROM queue_entries WHERE id=?', entryId);
+      result = { id: entryId };
+    } else return Response.json({ error: 'Invalid queue mutation' }, { status: 400 });
+
+    const response = { ok: true, result };
+    this.sql.exec('INSERT INTO mutations (mutation_id,response,created_at) VALUES (?,?,?)', mutationId, JSON.stringify(response), now);
+    this.broadcast({ type: 'queue.updated', mutationId });
+    return Response.json(response);
   }
 
   webSocketMessage(ws, message) {
     try {
       const payload = JSON.parse(message);
-      if (payload.action === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong', id: payload.id }));
-      } else if (payload.action === 'refresh') {
-        ws.send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
-      }
-    } catch {
-      ws.send(JSON.stringify({ type: 'error', message: 'Invalid message' }));
-    }
+      if (payload.action === 'ping') ws.send(JSON.stringify({ type: 'pong', id: payload.id }));
+      else if (payload.action === 'refresh') ws.send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
+    } catch { ws.send(JSON.stringify({ type: 'error', message: 'Invalid message' })); }
   }
-
   webSocketClose() {}
   webSocketError() {}
 
+  broadcast(payload) {
+    const data = JSON.stringify(payload);
+    for (const ws of this.ctx.getWebSockets()) ws.send(data);
+  }
+
   listEntries() {
-    return this.sql.exec(`
-      SELECT
-        id,
-        first_name AS firstName,
-        last_name AS lastName,
-        appointment_time AS appointmentTime,
-        check_in_time AS checkInTime,
-        status,
-        created_at AS createdAt,
-        updated_at AS updatedAt
-      FROM queue_entries
-      ORDER BY
-        CASE WHEN appointment_time IS NULL THEN 1 ELSE 0 END,
-        appointment_time ASC,
-        check_in_time ASC,
-        id ASC
-    `).toArray();
+    return this.sql.exec(`SELECT id, first_name AS firstName, last_name AS lastName, appointment_time AS appointmentTime, check_in_time AS checkInTime, status, created_at AS createdAt, updated_at AS updatedAt FROM queue_entries ORDER BY CASE WHEN appointment_time IS NULL THEN 1 ELSE 0 END, appointment_time ASC, check_in_time ASC, id ASC`).toArray();
   }
 }
