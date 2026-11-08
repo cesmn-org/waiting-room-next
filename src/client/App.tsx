@@ -37,28 +37,57 @@ export function App() {
 
   useEffect(() => {
     let retry: number | undefined;
+    let heartbeat: number | undefined;
+    let heartbeatTimeout: number | undefined;
     let socket: WebSocket;
     let stopped = false;
+
+    const clearHeartbeat = () => {
+      if (heartbeat) window.clearInterval(heartbeat);
+      if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
+      heartbeat = undefined;
+      heartbeatTimeout = undefined;
+    };
+
+    const markDisconnected = () => {
+      setConnected(false);
+      clearHeartbeat();
+      if (socket.readyState === WebSocket.OPEN) socket.close();
+    };
 
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
-      socket.onopen = () => setConnected(true);
+      socket.onopen = () => {
+        setConnected(true);
+        heartbeat = window.setInterval(() => {
+          if (socket.readyState !== WebSocket.OPEN) return;
+          socket.send(JSON.stringify({ action: 'ping' }));
+          heartbeatTimeout = window.setTimeout(markDisconnected, 5000);
+        }, 5000);
+      };
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data) as { type: string; entries?: QueueEntry[] };
-        if (message.type === 'queue.snapshot' && message.entries) setEntries(message.entries);
+        if (message.type === 'pong') {
+          if (heartbeatTimeout) window.clearTimeout(heartbeatTimeout);
+          heartbeatTimeout = undefined;
+        } else if (message.type === 'queue.snapshot' && message.entries) {
+          setEntries(message.entries);
+        }
       };
       socket.onclose = () => {
         setConnected(false);
+        clearHeartbeat();
         if (!stopped) retry = window.setTimeout(connect, 2000);
       };
-      socket.onerror = () => setConnected(false);
+      socket.onerror = () => markDisconnected();
     };
 
     connect();
     return () => {
       stopped = true;
       if (retry) window.clearTimeout(retry);
+      clearHeartbeat();
       socket?.close();
     };
   }, []);

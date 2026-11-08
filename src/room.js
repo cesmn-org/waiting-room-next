@@ -42,7 +42,9 @@ export class WaitingRoom {
   webSocketMessage(ws, message) {
     try {
       const payload = JSON.parse(message);
-      if (payload.action === 'refresh') {
+      if (payload.action === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong' }));
+      } else if (payload.action === 'refresh') {
         ws.send(JSON.stringify({ type: 'queue.snapshot', entries: this.listEntries() }));
       }
     } catch {
