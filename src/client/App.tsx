@@ -282,55 +282,27 @@ export function App() {
   }, [mode]);
 
   useEffect(() => {
+    if ((mode === 'tv' || mode === 'tablet') && !deviceReady) return;
+
     let retry: number | undefined;
-    let heartbeat: number | undefined;
-    let timeout: number | undefined;
-    let socket: WebSocket;
+    let socket: WebSocket | undefined;
     let stopped = false;
-    let reconnectImmediately = true;
-    let heartbeatId = 0;
-    let awaiting: number | undefined;
-    const clear = () => {
-      if (heartbeat) clearInterval(heartbeat);
-      if (timeout) clearTimeout(timeout);
-      heartbeat = undefined;
-      timeout = undefined;
-      awaiting = undefined;
-    };
-    const disconnect = () => {
-      setConnected(false);
-      clear();
-      if (socket.readyState === WebSocket.OPEN) socket.close();
-    };
+    let reconnectDelay = 500;
+
     const connect = () => {
+      if (stopped) return;
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const socketUrl = `${protocol}//${location.host}/ws${mode === 'tv' || mode === 'tablet' ? `?device=${mode}` : ''}`;
-      logNetwork('websocket connecting', { url: socketUrl, mode });
+      logNetwork('websocket connecting', { mode });
       socket = new WebSocket(socketUrl);
       socket.onopen = () => {
         logNetwork('websocket opened', { mode });
+        reconnectDelay = 500;
         setConnected(true);
-        reconnectImmediately = true;
         refresh();
-        const beat = () => {
-          if (socket.readyState !== WebSocket.OPEN) return;
-          const id = ++heartbeatId;
-          awaiting = id;
-          socket.send(JSON.stringify({ action: 'ping', id }));
-          if (timeout) clearTimeout(timeout);
-          timeout = window.setTimeout(() => {
-            if (awaiting === id) disconnect();
-          }, 500);
-        };
-        beat();
-        heartbeat = window.setInterval(beat, 1000);
       };
       socket.onmessage = (event) => {
-        let message: {
-          type: string;
-          id?: number;
-          entries?: QueueEntry[];
-        };
+        let message: { type: string; entries?: QueueEntry[] };
         try {
           message = JSON.parse(event.data);
         } catch {
@@ -338,49 +310,39 @@ export function App() {
           return;
         }
         logNetwork('websocket message', { type: message.type, count: message.entries?.length });
-        if (message.type === 'pong' && message.id === awaiting) {
-          if (timeout) clearTimeout(timeout);
-          timeout = undefined;
-          awaiting = undefined;
-        } else if (message.type === 'queue.snapshot' && message.entries) {
+        if (message.type === 'queue.snapshot' && message.entries) {
           setEntries(message.entries);
           loadDisplayMessage();
         } else if (message.type === 'display-message.updated') loadDisplayMessage();
         else if (message.type === 'queue.updated') refresh();
       };
       socket.onclose = (event) => {
-        console.warn('[waiting-room] websocket closed', {
+        logNetwork('websocket closed', {
           mode,
           code: event.code,
           reason: event.reason,
           clean: event.wasClean,
         });
         setConnected(false);
-        clear();
         if ((mode === 'tv' || mode === 'tablet') && event.code === 4001) {
           setDeviceReady(false);
           setPairingStatus('revoked');
           return;
         }
         if (!stopped) {
-          if (retry) clearTimeout(retry);
-          retry = window.setTimeout(connect, reconnectImmediately ? 0 : 500);
-          reconnectImmediately = false;
+          retry = window.setTimeout(connect, reconnectDelay + Math.random() * reconnectDelay);
+          reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
         }
       };
-      socket.onerror = (event) => {
-        console.error('[waiting-room] websocket error', { mode, event });
-        disconnect();
+      socket.onerror = () => {
+        logNetwork('websocket error', { mode });
       };
     };
-    if (mode === 'tv' || mode === 'tablet') {
-      if (!deviceReady) return;
-    }
+
     connect();
     return () => {
       stopped = true;
       if (retry) clearTimeout(retry);
-      clear();
       socket?.close();
     };
   }, [mode, deviceReady]);
