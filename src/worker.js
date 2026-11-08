@@ -91,11 +91,12 @@ export default {
     const isWebSocket = url.pathname === '/ws';
     if (isQueueApi || isWebSocket) {
       const isMutation = ['POST', 'PATCH', 'DELETE'].includes(request.method);
+      let permission = null;
       if (identity && role) {
         if (isMutation && !['admin', 'intake'].includes(role)) return forbidden();
       } else {
-        const permission = await devicePermission(request, env);
-        if (!permission) return unauthorized('Device pairing required');
+        permission = await devicePermission(request, env);
+        if (!permission) return unauthorized('Device pairing required', request, env);
         if (isMutation && permission !== 'tablet') return forbidden();
       }
       if (!identity && permission) {
