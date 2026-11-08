@@ -21,7 +21,7 @@ async function unauthorized(message = 'Authentication required', request, env) {
   return response;
 }
 function forbidden() { return Response.json({ error: 'Insufficient permissions' }, { status: 403 }); }
-function requestedPermission(request) { const path = new URL(request.url).pathname; if (path.startsWith('/tablet')) return 'tablet'; if (path.startsWith('/tv')) return 'tv'; const requested = request.headers.get('X-Device-Permission'); return requested === 'tv' || requested === 'tablet' ? requested : null; }
+function requestedPermission(request) { const url = new URL(request.url); const path = url.pathname; if (path.startsWith('/tablet')) return 'tablet'; if (path.startsWith('/tv')) return 'tv'; const queryPermission = url.searchParams.get('device'); if (queryPermission === 'tv' || queryPermission === 'tablet') return queryPermission; const requested = request.headers.get('X-Device-Permission'); return requested === 'tv' || requested === 'tablet' ? requested : null; }
 function cookie(request, permission = requestedPermission(request)) { if (!permission) return null; const name = `${DEVICE_COOKIE_PREFIX}${permission}`; return request.headers.get('Cookie')?.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${name}=`))?.slice(name.length + 1) || null; }
 function queueStub(env) { return env.QUEUE.get(env.QUEUE.idFromName(queueId)); }
 
