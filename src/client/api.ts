@@ -1,7 +1,8 @@
 import type { QueueEntry, QueueStatus } from './types';
 
-export async function loadQueue(): Promise<QueueEntry[]> {
-  const response = await fetch('/api/queue');
+export async function loadQueue(device?: 'tv' | 'tablet'): Promise<QueueEntry[]> {
+  const path = device ? `/api/queue?device=${device}` : '/api/queue';
+  const response = await fetch(path);
   if (!response.ok) throw new Error('Unable to load queue');
   return response.json() as Promise<QueueEntry[]>;
 }
