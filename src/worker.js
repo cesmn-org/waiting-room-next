@@ -39,6 +39,11 @@ export default {
     const role = identity ? humanRole(identity.email, env) : null;
     const isHumanRoute = url.pathname === '/api/session' || url.pathname.startsWith('/api/pair/approve') || url.pathname.startsWith('/api/pair/deny');
 
+    if (url.pathname === '/api/pair/session' && request.method === 'GET') {
+      const permission = await devicePermission(request, env);
+      return permission ? Response.json({ role: permission }) : unauthorized('Device pairing required');
+    }
+
     if (url.pathname === '/api/session' && request.method === 'GET') {
       if (identity && role) return Response.json({ email: identity.email, role });
       const permission = await devicePermission(request, env);
