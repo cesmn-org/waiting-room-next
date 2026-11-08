@@ -1,27 +1,12 @@
 import { WaitingRoom } from './room.js';
-import { accessDiagnostics, accessIdentity, humanRole } from './access.js';
+import { accessIdentity, humanRole } from './access.js';
 
 export { WaitingRoom };
 const queueId = 'main-queue';
 const DEVICE_COOKIE_PREFIX = 'waiting_room_device_';
 
-async function unauthorized(message = 'Authentication required', request, env) {
-  const response = Response.json({ error: message }, { status: 401 });
-  if (request && env) {
-    response.headers.set(
-      'X-Waiting-Room-Auth-Debug',
-      JSON.stringify({
-        accessJwtHeader: Boolean(request.headers.get('cf-access-jwt-assertion')),
-        accessCookie: Boolean(request.headers.get('Cookie')?.includes('CF_Authorization=')),
-        teamDomainConfigured: Boolean(env.ACCESS_TEAM_DOMAIN),
-        audienceConfigured: Boolean(env.ACCESS_AUDIENCE),
-        adminEmailConfigured: Boolean(env.ADMIN_EMAIL),
-        intakeEmailConfigured: Boolean(env.INTAKE_EMAIL),
-        jwt: await accessDiagnostics(request, env),
-      }),
-    );
-  }
-  return response;
+function unauthorized(message = 'Authentication required') {
+  return Response.json({ error: message }, { status: 401 });
 }
 function forbidden() {
   return Response.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -71,11 +56,6 @@ export default {
     const url = new URL(request.url);
     const identity = await accessIdentity(request, env);
     const role = identity ? humanRole(identity.email, env) : null;
-    const isHumanRoute =
-      url.pathname === '/api/session' ||
-      url.pathname.startsWith('/api/pair/approve') ||
-      url.pathname.startsWith('/api/pair/deny');
-
     if (url.pathname === '/api/pair/session' && request.method === 'GET') {
       const permission = await devicePermission(
         request,
@@ -100,7 +80,7 @@ export default {
 
     if (url.pathname === '/api/devices/revoke') {
       if (!identity || !role)
-        return unauthorized('Valid Cloudflare Access authentication required', request, env);
+        return unauthorized('Valid Cloudflare Access authentication required');
       if (!['admin', 'intake'].includes(role)) return forbidden();
       const body = await request.text();
       const stub = queueStub(env);
@@ -117,28 +97,28 @@ export default {
     }
     if (url.pathname === '/api/devices') {
       if (!identity || !role)
-        return unauthorized('Valid Cloudflare Access authentication required', request, env);
+        return unauthorized('Valid Cloudflare Access authentication required');
       if (!['admin', 'intake'].includes(role)) return forbidden();
       return queueStub(env).fetch(request);
     }
 
     if (url.pathname === '/api/pair/pending') {
       if (!identity || !role)
-        return unauthorized('Valid Cloudflare Access authentication required', request, env);
+        return unauthorized('Valid Cloudflare Access authentication required');
       if (!['admin', 'intake'].includes(role)) return forbidden();
       return queueStub(env).fetch(request);
     }
 
     if (url.pathname === '/api/pair/cancel') {
       if (!identity || !role)
-        return unauthorized('Valid Cloudflare Access authentication required', request, env);
+        return unauthorized('Valid Cloudflare Access authentication required');
       if (!['admin', 'intake'].includes(role)) return forbidden();
       return queueStub(env).fetch(request);
     }
 
     if (url.pathname === '/api/pair/approve' || url.pathname === '/api/pair/deny') {
       if (!identity || !role)
-        return unauthorized('Valid Cloudflare Access authentication required', request, env);
+        return unauthorized('Valid Cloudflare Access authentication required');
       if (!['admin', 'intake'].includes(role)) return forbidden();
       const stub = queueStub(env);
       const headers = new Headers(request.headers);
@@ -176,7 +156,7 @@ export default {
       if (request.method === 'GET' && (isHuman || permission === 'tv'))
         return queueStub(env).fetch(request);
       if (request.method === 'POST' && isHuman) return queueStub(env).fetch(request);
-      return permission ? forbidden() : unauthorized('Authorization required', request, env);
+      return permission ? forbidden() : unauthorized('Authorization required');
     }
 
     const isQueueApi = url.pathname === '/api/queue' || url.pathname.startsWith('/api/queue/');
@@ -188,7 +168,7 @@ export default {
         if (isMutation && !['admin', 'intake'].includes(role)) return forbidden();
       } else {
         permission = await devicePermission(request, env);
-        if (!permission) return unauthorized('Device pairing required', request, env);
+        if (!permission) return unauthorized('Device pairing required');
         if (isMutation && permission !== 'tablet') return forbidden();
       }
       if (!identity && permission) {
