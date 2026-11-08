@@ -1,0 +1,23 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #17324d;
+  background: #f4f7fa;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+header { margin-bottom: 2rem; }
+h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); }
+.clock { font-size: 1.2rem; margin: .5rem 0 1rem; }
+.connection { display: inline-block; padding: .7rem 1rem; border-radius: .5rem; font-weight: 700; }
+.connection.live { background: #dff5e5; color: #1d6b38; }
+.connection.offline { background: #ffdede; color: #8b1e1e; }
+.queue-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.queue-section { background: white; border-radius: .75rem; padding: 1.5rem; box-shadow: 0 2px 10px #17324d18; }
+h2 { margin-top: 0; }
+ol { margin: 0; padding-left: 2rem; }
+li { padding: .8rem 0; border-bottom: 1px solid #e5ebf0; font-size: 1.35rem; }
+.empty { color: #64788a; }
+@media (max-width: 650px) { main { padding: 1rem; } .queue-grid { grid-template-columns: 1fr; } }
