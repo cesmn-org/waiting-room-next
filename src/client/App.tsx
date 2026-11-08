@@ -2,6 +2,15 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 're
 import type { QueueEntry, QueueStatus } from './types';
 import { loadQueue, mutateQueue } from './api';
 
+const appointmentTimes = Array.from({ length: 58 }, (_, index) => {
+  const totalMinutes = 13 * 60 + index * 5;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const label = new Date(2000, 0, 1, hour, minute).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return { value, label };
+});
+
 function displayName(entry: QueueEntry) { return `${entry.firstName} ${entry.lastName.charAt(0)}.`; }
 function Clock() { const [now, setNow] = useState(() => new Date()); useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []); return <p className="clock">{new Intl.DateTimeFormat(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(now)}</p>; }
 function QueueList({ title, entries, action }: { title: string; entries: QueueEntry[]; action?: (entry: QueueEntry) => ReactNode }) { return <section className="queue-section"><h2>{title}</h2>{entries.length === 0 ? <p className="empty">No clients</p> : <ol>{entries.map((entry) => <li key={entry.id}><span>{displayName(entry)}</span>{action?.(entry)}</li>)}</ol>}</section>; }
@@ -49,5 +58,5 @@ function Intake({ entries, connected, onAdded, onStatus, onDelete, error }: { en
     } finally { setSaving(false); }
   }
 
-  return <main><header><h1>Intake</h1><Connection connected={connected} />{(error || formError) && <p className="error">{formError || error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time (leave blank for walk-in)<input type="datetime-local" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} /></label><label>Check-in time<input required type="datetime-local" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} /></label><button disabled={!connected || saving}>{saving ? 'Adding…' : 'Add checked-in client'}</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>;
+  return <main><header><h1>Intake</h1><Connection connected={connected} />{(error || formError) && <p className="error">{formError || error}</p>}</header><form className="client-form" onSubmit={submit}><label>First name<input required value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label><label>Last name<input required value={lastName} onChange={(e) => setLastName(e.target.value)} /></label><label>Appointment time<select value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)}><option value="">Walk-in</option>{appointmentTimes.map((time) => <option key={time.value} value={time.value}>{time.label}</option>)}</select></label><label>Check-in time<input required type="datetime-local" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} /></label><button disabled={!connected || saving}>{saving ? 'Adding…' : 'Add checked-in client'}</button></form><h2>Queue entries</h2><ul className="intake-list">{entries.map((entry) => <li key={entry.id}><strong>{entry.firstName} {entry.lastName}</strong><span>{entry.appointmentTime ? 'Appointment' : 'Walk-in'} · {entry.status}</span><button disabled={!connected} onClick={() => onStatus(entry, entry.status === 'checked_in' ? 'shopping' : 'checked_in')}>{entry.status === 'checked_in' ? 'Mark shopping' : 'Undo shopping'}</button><button disabled={!connected} onClick={() => onDelete(entry)}>Delete</button></li>)}</ul></main>;
 }

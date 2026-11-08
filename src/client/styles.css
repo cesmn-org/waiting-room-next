@@ -24,7 +24,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .error { color: #8b1e1e; background: #ffdede; padding: .7rem 1rem; border-radius: .5rem; }
 .client-form { display: grid; gap: 1rem; max-width: 38rem; background: white; padding: 1.5rem; border-radius: .75rem; }
 label { display: grid; gap: .35rem; font-weight: 600; }
-input { padding: .65rem; border: 1px solid #b7c5d0; border-radius: .35rem; font: inherit; }
+input, select { padding: .65rem; border: 1px solid #b7c5d0; border-radius: .35rem; font: inherit; background: white; }
 .intake-list { list-style: none; padding: 0; background: white; border-radius: .75rem; }
 .intake-list li { flex-wrap: wrap; }
 .intake-list span { color: #64788a; font-size: .9rem; }
