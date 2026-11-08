@@ -33,6 +33,14 @@ input, select { padding: .65rem; border: 1px solid #b7c5d0; border-radius: .35re
 .intake-list { list-style: none; padding: 0; background: white; border-radius: .75rem; }
 .intake-list li { flex-wrap: wrap; }
 .intake-list span { color: #64788a; font-size: .9rem; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 1rem; background: rgba(16, 35, 57, .55); }
+.modal { width: min(100%, 30rem); max-width: 32rem; background: white; border-radius: .75rem; box-shadow: 0 1rem 3rem rgba(0,0,0,.25); overflow: hidden; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #e5ebf0; }
+.modal-header h2 { margin: 0; font-size: 1.2rem; }
+.icon-button { padding: .1rem .55rem; background: transparent; color: #64788a; font-size: 1.6rem; }
+.modal-body { display: grid; gap: .8rem; padding: 1.25rem; }
+.modal-actions { display: flex; justify-content: flex-end; gap: .6rem; padding: .8rem 1.25rem; background: #f7f9fb; }
+.secondary-button { background: #e5ebf0; color: #17324d; }
 .empty { color: #64788a; }
 @media (max-width: 650px) { main { padding: 1rem; } .queue-grid { grid-template-columns: 1fr; } .client-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .client-form button { grid-column: 1 / -1; } }
 @media (max-width: 420px) { .client-form { grid-template-columns: 1fr; } .client-form button { grid-column: auto; } }

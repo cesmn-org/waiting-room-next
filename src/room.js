@@ -52,8 +52,16 @@ export class WaitingRoom {
       this.sql.exec('INSERT INTO queue_entries (first_name,last_name,appointment_time,check_in_time,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)', body.firstName.trim(), body.lastName.trim(), body.appointmentTime || null, body.checkInTime, 'checked_in', now, now);
       result = this.sql.exec('SELECT id FROM queue_entries ORDER BY id DESC LIMIT 1').toArray()[0];
     } else if (request.method === 'PATCH' && Number.isInteger(entryId)) {
-      if (!['checked_in', 'shopping'].includes(body.status)) return Response.json({ error: 'Invalid status' }, { status: 400 });
-      this.sql.exec('UPDATE queue_entries SET status=?, updated_at=? WHERE id=?', body.status, now, entryId);
+      const current = this.sql.exec('SELECT * FROM queue_entries WHERE id=?', entryId).toArray()[0];
+      if (!current) return Response.json({ error: 'Client not found' }, { status: 404 });
+      const status = body.status ?? current.status;
+      if (!['checked_in', 'shopping'].includes(status)) return Response.json({ error: 'Invalid status' }, { status: 400 });
+      const firstName = body.firstName ?? current.first_name;
+      const lastName = body.lastName ?? current.last_name;
+      const appointmentTime = body.appointmentTime === undefined ? current.appointment_time : body.appointmentTime || null;
+      const checkInTime = body.checkInTime ?? current.check_in_time;
+      if (!String(firstName).trim() || !String(lastName).trim() || !checkInTime) return Response.json({ error: 'Names and check-in time are required' }, { status: 400 });
+      this.sql.exec('UPDATE queue_entries SET first_name=?, last_name=?, appointment_time=?, check_in_time=?, status=?, updated_at=? WHERE id=?', String(firstName).trim(), String(lastName).trim(), appointmentTime, checkInTime, status, now, entryId);
       result = { id: entryId };
     } else if (request.method === 'DELETE' && Number.isInteger(entryId)) {
       this.sql.exec('DELETE FROM queue_entries WHERE id=?', entryId);
