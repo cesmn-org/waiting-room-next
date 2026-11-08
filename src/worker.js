@@ -102,7 +102,8 @@ export default {
       return response;
     }
 
-    if (url.pathname === '/api/display-message') {
+    const displayMessagePath = url.pathname.replace(/\/$/, '') === '/api/display-message';
+    if (displayMessagePath) {
       const isHuman = Boolean(identity && role && ['admin', 'intake'].includes(role));
       const permission = isHuman ? null : await devicePermission(request, env, requestedPermission(request));
       if (request.method === 'GET' && (isHuman || permission === 'tv')) return queueStub(env).fetch(request);
