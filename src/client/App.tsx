@@ -16,7 +16,19 @@ function localDateTimeValue(date = new Date()) {
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
 }
 
-function formatAppointmentTime(value: string) { const match = /^(\d{1,2}):(\d{2})$/.exec(value); if (!match) return value; const hour = Number(match[1]); const minute = Number(match[2]); const date = new Date(2000, 0, 1, hour, minute); return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+function formatAppointmentTime(value: string) {
+  const normalized = value.trim().slice(0, 5);
+  const configured = appointmentTimes.find((time) => time.value === normalized);
+  if (configured) return configured.label;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(normalized);
+  if (!match) return value;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return value;
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
 function displayName(entry: QueueEntry) { return `${entry.firstName} ${entry.lastName.charAt(0)}.`; }
 function Clock() { const [now, setNow] = useState(() => new Date()); useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []); return <p className="clock">{new Intl.DateTimeFormat(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(now)}</p>; }
 function formatCheckInTime(value: string) { return new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit' }).format(new Date(value)); }
