@@ -730,7 +730,6 @@ function DeviceCodeInput({
         .split(''),
     );
   }, [value]);
-  const cleanValue = characters.join('');
   function update(index: number, raw: string) {
     const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const next = [...characters];
