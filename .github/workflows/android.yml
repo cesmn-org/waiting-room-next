@@ -39,7 +39,15 @@ jobs:
           echo "$sdkmanager_dir" >> "$GITHUB_PATH"
           echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          # sdkmanager exits after the last license and closes stdin; with
+          # pipefail enabled, `yes` then reports SIGPIPE as a false failure.
+          set +o pipefail
           yes | "$sdkmanager_path" --licenses >/dev/null
+          license_status=${PIPESTATUS[1]}
+          set -o pipefail
+          if [[ "$license_status" -ne 0 ]]; then
+            exit "$license_status"
+          fi
           "$sdkmanager_path" --install \
             "platforms;android-35" \
             "build-tools;35.0.0"
