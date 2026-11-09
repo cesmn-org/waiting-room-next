@@ -122,20 +122,6 @@ button.secondary-button {
   margin: 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
-.tablet-list-toolbar {
-  margin: 0;
-  padding: 10px 28px;
-}
-.tablet-queue-counts {
-  display: flex;
-  gap: 1rem;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-.tablet-list-toolbar .visibility-control {
-  margin-left: auto;
-}
 .dark-app .visibility-control {
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
@@ -172,6 +158,12 @@ button.secondary-button {
 }
 .queue-heading {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+.queue-heading-title {
+  display: inline-flex;
   align-items: center;
   gap: 0.55rem;
 }

@@ -86,12 +86,14 @@ function Clock() {
 function QueueList({
   title,
   count,
+  headingAction,
   entries,
   action,
   details = false,
 }: {
   title: ReactNode;
   count?: number;
+  headingAction?: ReactNode;
   entries: QueueEntry[];
   action?: (entry: QueueEntry) => ReactNode;
   details?: boolean;
@@ -99,8 +101,11 @@ function QueueList({
   return (
     <section className="queue-section">
       <h2 className="queue-heading">
-        <span>{title}</span>
-        {count !== undefined && <span className="queue-count">{count}</span>}
+        <span className="queue-heading-title">
+          <span>{title}</span>
+          {count !== undefined && <span className="queue-count">{count}</span>}
+        </span>
+        {headingAction}
       </h2>
       {entries.length === 0 ? (
         <p className="empty">No clients</p>
@@ -538,32 +543,6 @@ export function App() {
         </div>
       </header>
       {error && <p className="error">{error}</p>}
-      {mode === 'tablet' && (
-        <div className="tablet-list-toolbar">
-          <div className="visibility-control" aria-label="Client visibility">
-            <button
-              className={!showAllTablet ? 'selected' : ''}
-              aria-pressed={!showAllTablet}
-              onClick={() => {
-                setShowAllTablet(false);
-                localStorage.setItem('tablet-show-all', 'false');
-              }}
-            >
-              Checked-in only
-            </button>
-            <button
-              className={showAllTablet ? 'selected' : ''}
-              aria-pressed={showAllTablet}
-              onClick={() => {
-                setShowAllTablet(true);
-                localStorage.setItem('tablet-show-all', 'true');
-              }}
-            >
-              Show all
-            </button>
-          </div>
-        </div>
-      )}
       <div className="queue-grid">
         <QueueList
           title="Appointments"
@@ -588,6 +567,32 @@ export function App() {
         <QueueList
           title="Walk-ins"
           count={checkedInWalkInCount}
+          headingAction={
+            mode === 'tablet' ? (
+              <div className="visibility-control" aria-label="Client visibility">
+                <button
+                  className={!showAllTablet ? 'selected' : ''}
+                  aria-pressed={!showAllTablet}
+                  onClick={() => {
+                    setShowAllTablet(false);
+                    localStorage.setItem('tablet-show-all', 'false');
+                  }}
+                >
+                  Checked-in only
+                </button>
+                <button
+                  className={showAllTablet ? 'selected' : ''}
+                  aria-pressed={showAllTablet}
+                  onClick={() => {
+                    setShowAllTablet(true);
+                    localStorage.setItem('tablet-show-all', 'true');
+                  }}
+                >
+                  Show all
+                </button>
+              </div>
+            ) : undefined
+          }
           entries={walkIns}
           details={mode === 'tablet'}
           action={
