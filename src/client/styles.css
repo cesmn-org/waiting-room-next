@@ -208,12 +208,14 @@ button.secondary-button {
 .build-version {
   display: block;
   margin: 2rem auto 0;
-  color: rgba(255, 255, 255, 0.55);
+  color: #687386;
   font-size: 0.7rem;
   text-align: center;
 }
-.intake-page .build-version {
-  color: #888;
+.dark-app .build-version,
+.display-app .build-version,
+.pairing-page .build-version {
+  color: rgba(255, 255, 255, 0.7);
 }
 .auth-loading {
   min-height: 100vh;
