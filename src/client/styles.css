@@ -133,6 +133,9 @@ button.secondary-button {
   font-size: 0.85rem;
   font-weight: 600;
 }
+.tablet-list-toolbar .visibility-control {
+  margin-left: auto;
+}
 .dark-app .visibility-control {
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
