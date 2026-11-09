@@ -172,8 +172,7 @@ export function App() {
     () =>
       entries.filter(
         (e) =>
-          e.appointmentTime &&
-          (e.status === 'checked_in' || (mode === 'tablet' && showAllTablet)),
+          e.appointmentTime && (e.status === 'checked_in' || (mode === 'tablet' && showAllTablet)),
       ),
     [entries, mode, showAllTablet],
   );
@@ -181,8 +180,7 @@ export function App() {
     () =>
       entries.filter(
         (e) =>
-          !e.appointmentTime &&
-          (e.status === 'checked_in' || (mode === 'tablet' && showAllTablet)),
+          !e.appointmentTime && (e.status === 'checked_in' || (mode === 'tablet' && showAllTablet)),
       ),
     [entries, mode, showAllTablet],
   );
@@ -541,8 +539,7 @@ export function App() {
             <h2>Clients</h2>
             <p className="queue-summary">
               {checkedInCount} checked in
-              {shoppingCount > 0 &&
-                ` · ${shoppingCount} shopping${showAllTablet ? '' : ' hidden'}`}
+              {shoppingCount > 0 && ` · ${shoppingCount} shopping${showAllTablet ? '' : ' hidden'}`}
             </p>
           </div>
           <div className="visibility-control" aria-label="Client visibility">
@@ -579,7 +576,9 @@ export function App() {
               ? (e) => (
                   <button
                     className="shop-btn"
-                    onClick={() => setStatus(e, e.status === 'shopping' ? 'checked_in' : 'shopping')}
+                    onClick={() =>
+                      setStatus(e, e.status === 'shopping' ? 'checked_in' : 'shopping')
+                    }
                   >
                     {e.status === 'shopping' ? 'Undo' : 'Shop 🛒 →'}
                   </button>
@@ -596,7 +595,9 @@ export function App() {
               ? (e) => (
                   <button
                     className="shop-btn"
-                    onClick={() => setStatus(e, e.status === 'shopping' ? 'checked_in' : 'shopping')}
+                    onClick={() =>
+                      setStatus(e, e.status === 'shopping' ? 'checked_in' : 'shopping')
+                    }
                   >
                     {e.status === 'shopping' ? 'Undo' : 'Shop 🛒 →'}
                   </button>
