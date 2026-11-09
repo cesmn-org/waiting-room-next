@@ -165,15 +165,35 @@ export function App() {
   const [error, setError] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [sessionChecked, setSessionChecked] = useState(mode !== 'intake' && mode !== 'admin');
+  const [showAllTablet, setShowAllTablet] = useState(
+    () => localStorage.getItem('tablet-show-all') === 'true',
+  );
   const appointments = useMemo(
-    () => entries.filter((e) => e.status === 'checked_in' && e.appointmentTime),
-    [entries],
+    () =>
+      entries.filter(
+        (e) =>
+          e.appointmentTime &&
+          (e.status === 'checked_in' || (mode === 'tablet' && showAllTablet)),
+      ),
+    [entries, mode, showAllTablet],
   );
   const walkIns = useMemo(
-    () => entries.filter((e) => e.status === 'checked_in' && !e.appointmentTime),
+    () =>
+      entries.filter(
+        (e) =>
+          !e.appointmentTime &&
+          (e.status === 'checked_in' || (mode === 'tablet' && showAllTablet)),
+      ),
+    [entries, mode, showAllTablet],
+  );
+  const checkedInCount = useMemo(
+    () => entries.filter((entry) => entry.status === 'checked_in').length,
     [entries],
   );
-  const shopping = useMemo(() => entries.filter((e) => e.status === 'shopping'), [entries]);
+  const shoppingCount = useMemo(
+    () => entries.filter((entry) => entry.status === 'shopping').length,
+    [entries],
+  );
   const loadDisplayMessage = () =>
     fetch(`/api/display-message${mode === 'tv' ? '?device=tv' : ''}`)
       .then((response) => response.json())
@@ -515,6 +535,40 @@ export function App() {
         </div>
       </header>
       {error && <p className="error">{error}</p>}
+      {mode === 'tablet' && (
+        <div className="tablet-list-toolbar">
+          <div>
+            <h2>Clients</h2>
+            <p className="queue-summary">
+              {checkedInCount} checked in
+              {shoppingCount > 0 &&
+                ` · ${shoppingCount} shopping${showAllTablet ? '' : ' hidden'}`}
+            </p>
+          </div>
+          <div className="visibility-control" aria-label="Client visibility">
+            <button
+              className={!showAllTablet ? 'selected' : ''}
+              aria-pressed={!showAllTablet}
+              onClick={() => {
+                setShowAllTablet(false);
+                localStorage.setItem('tablet-show-all', 'false');
+              }}
+            >
+              Checked-in only
+            </button>
+            <button
+              className={showAllTablet ? 'selected' : ''}
+              aria-pressed={showAllTablet}
+              onClick={() => {
+                setShowAllTablet(true);
+                localStorage.setItem('tablet-show-all', 'true');
+              }}
+            >
+              Show all
+            </button>
+          </div>
+        </div>
+      )}
       <div className="queue-grid">
         <QueueList
           title="Appointments"
@@ -523,8 +577,11 @@ export function App() {
           action={
             mode === 'tablet'
               ? (e) => (
-                  <button className="shop-btn" onClick={() => setStatus(e, 'shopping')}>
-                    Shop 🛒 →
+                  <button
+                    className="shop-btn"
+                    onClick={() => setStatus(e, e.status === 'shopping' ? 'checked_in' : 'shopping')}
+                  >
+                    {e.status === 'shopping' ? 'Undo' : 'Shop 🛒 →'}
                   </button>
                 )
               : undefined
@@ -537,24 +594,16 @@ export function App() {
           action={
             mode === 'tablet'
               ? (e) => (
-                  <button className="shop-btn" onClick={() => setStatus(e, 'shopping')}>
-                    Shop 🛒 →
+                  <button
+                    className="shop-btn"
+                    onClick={() => setStatus(e, e.status === 'shopping' ? 'checked_in' : 'shopping')}
+                  >
+                    {e.status === 'shopping' ? 'Undo' : 'Shop 🛒 →'}
                   </button>
                 )
               : undefined
           }
         />
-        {mode === 'tablet' && (
-          <QueueList
-            title="Shopping / undo"
-            entries={shopping}
-            action={(e) => (
-              <button className="shop-btn" onClick={() => setStatus(e, 'checked_in')}>
-                Undo
-              </button>
-            )}
-          />
-        )}
       </div>
       <BuildVersion />
     </main>

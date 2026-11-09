@@ -122,6 +122,30 @@ button.secondary-button {
   margin: 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
+.tablet-list-toolbar {
+  margin: 0;
+  padding: 18px 28px 0;
+}
+.dark-app .tablet-list-toolbar h2 {
+  color: #fff;
+}
+.dark-app .tablet-list-toolbar .queue-summary {
+  color: rgba(255, 255, 255, 0.65);
+}
+.dark-app .visibility-control {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+.dark-app .visibility-control button {
+  color: rgba(255, 255, 255, 0.75);
+}
+.dark-app .visibility-control button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.dark-app .visibility-control button.selected {
+  background: #fff;
+  color: var(--primary);
+}
 .queue-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -300,14 +324,16 @@ select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(26, 50, 82, 0.1);
 }
-.intake-list-toolbar {
+.intake-list-toolbar,
+.tablet-list-toolbar {
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 1rem;
   margin: 0.25rem 0 0.6rem;
 }
-.intake-list-toolbar h2 {
+.intake-list-toolbar h2,
+.tablet-list-toolbar h2 {
   margin: 0;
   color: var(--text-main);
   font-size: 1.1rem;
@@ -712,7 +738,8 @@ select:focus {
   .client-form button {
     grid-column: auto;
   }
-  .intake-list-toolbar {
+  .intake-list-toolbar,
+  .tablet-list-toolbar {
     align-items: stretch;
     flex-direction: column;
   }
