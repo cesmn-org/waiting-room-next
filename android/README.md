@@ -1,6 +1,6 @@
-# Waiting Room TV Android app
+# Waiting Room Device Android app
 
-This is a minimal Android WebView app for displaying the deployed Waiting Room TV page.
+This is a minimal Android WebView app for displaying the deployed Waiting Room TV or tablet interface.
 
 ## Behavior
 

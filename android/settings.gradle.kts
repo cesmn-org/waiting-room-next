@@ -16,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "waiting-room-tv"
+rootProject.name = "waiting-room-device"
 include(":app")
