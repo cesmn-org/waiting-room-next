@@ -1,6 +1,16 @@
 name: Build Android TV app
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/android.yml'
+      - 'android/**'
+  pull_request:
+    paths:
+      - '.github/workflows/android.yml'
+      - 'android/**'
   workflow_dispatch:
 
 permissions:

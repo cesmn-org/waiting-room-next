@@ -4,7 +4,29 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'eslint.config.js'
+      - 'wrangler.toml'
   pull_request:
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'eslint.config.js'
+      - 'wrangler.toml'
   workflow_dispatch:
 
 concurrency:
