@@ -126,11 +126,12 @@ button.secondary-button {
   margin: 0;
   padding: 18px 28px 0;
 }
-.dark-app .tablet-list-toolbar h2 {
-  color: #fff;
-}
-.dark-app .tablet-list-toolbar .queue-summary {
+.tablet-queue-counts {
+  display: flex;
+  gap: 1rem;
   color: rgba(255, 255, 255, 0.65);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 .dark-app .visibility-control {
   border-color: rgba(255, 255, 255, 0.2);
@@ -745,6 +746,10 @@ select:focus {
   }
   .visibility-control {
     align-self: flex-start;
+  }
+  .tablet-queue-counts {
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
   }
   .intake-row {
     grid-template-columns: 1fr 1fr;

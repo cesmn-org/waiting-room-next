@@ -184,12 +184,12 @@ export function App() {
       ),
     [entries, mode, showAllTablet],
   );
-  const checkedInCount = useMemo(
-    () => entries.filter((entry) => entry.status === 'checked_in').length,
+  const checkedInAppointmentCount = useMemo(
+    () => entries.filter((entry) => entry.status === 'checked_in' && entry.appointmentTime).length,
     [entries],
   );
-  const shoppingCount = useMemo(
-    () => entries.filter((entry) => entry.status === 'shopping').length,
+  const checkedInWalkInCount = useMemo(
+    () => entries.filter((entry) => entry.status === 'checked_in' && !entry.appointmentTime).length,
     [entries],
   );
   const loadDisplayMessage = () =>
@@ -535,12 +535,9 @@ export function App() {
       {error && <p className="error">{error}</p>}
       {mode === 'tablet' && (
         <div className="tablet-list-toolbar">
-          <div>
-            <h2>Clients</h2>
-            <p className="queue-summary">
-              {checkedInCount} checked in
-              {shoppingCount > 0 && ` · ${shoppingCount} shopping${showAllTablet ? '' : ' hidden'}`}
-            </p>
+          <div className="tablet-queue-counts" aria-label="Checked-in client counts">
+            <span>{checkedInAppointmentCount} checked-in appointments</span>
+            <span>{checkedInWalkInCount} checked-in walk-ins</span>
           </div>
           <div className="visibility-control" aria-label="Client visibility">
             <button
