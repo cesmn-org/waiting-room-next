@@ -18,6 +18,8 @@ type DeviceCredential = {
 };
 type DisplayMessage = { message: string; active: number; updatedAt: string | null };
 
+declare const __COMMIT_HASH__: string;
+
 const appointmentTimes = Array.from({ length: 58 }, (_, index) => {
   const totalMinutes = 13 * 60 + index * 5;
   const hour = Math.floor(totalMinutes / 60);
@@ -120,6 +122,10 @@ function QueueList({
     </section>
   );
 }
+function BuildVersion() {
+  return <small className="build-version">Build {__COMMIT_HASH__}</small>;
+}
+
 function Connection({ connected }: { connected: boolean }) {
   return connected ? null : (
     <>
@@ -435,6 +441,7 @@ export function App() {
           <Clock />
         </header>
         <div className="display-message">{displayMessage.message}</div>
+        <BuildVersion />
       </main>
     );
   if ((mode === 'tv' || mode === 'tablet') && !deviceReady)
@@ -458,6 +465,7 @@ export function App() {
                   ? 'Pairing was denied. Reload to try again.'
                   : error || 'Unable to pair this device.'}
         </p>
+        <BuildVersion />
       </main>
     );
   if (mode === 'admin')
@@ -471,20 +479,24 @@ export function App() {
           <Connection connected={connected} />
         </header>
         <DeviceAccessMenu />
+        <BuildVersion />
       </main>
     );
   if (mode === 'intake')
     return (
-      <Intake
-        entries={entries}
-        connected={connected}
-        onAdded={refresh}
-        onEdit={editEntry}
-        onDelete={remove}
-        onClear={refresh}
-        userEmail={userEmail}
-        error={error}
-      />
+      <>
+        <Intake
+          entries={entries}
+          connected={connected}
+          onAdded={refresh}
+          onEdit={editEntry}
+          onDelete={remove}
+          onClear={refresh}
+          userEmail={userEmail}
+          error={error}
+        />
+        <BuildVersion />
+      </>
     );
   return (
     <main className={mode === 'tablet' ? 'dark-app' : 'display-app'}>
@@ -537,6 +549,7 @@ export function App() {
           />
         )}
       </div>
+      <BuildVersion />
     </main>
   );
 }

@@ -205,6 +205,16 @@ button.secondary-button {
   padding: 0.7rem 1rem;
   border-radius: 0.5rem;
 }
+.build-version {
+  display: block;
+  margin: 2rem auto 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.7rem;
+  text-align: center;
+}
+.intake-page .build-version {
+  color: #888;
+}
 .auth-loading {
   min-height: 100vh;
   display: flex;
