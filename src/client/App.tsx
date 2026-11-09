@@ -433,16 +433,6 @@ export function App() {
       setError('Update failed; the change was reverted.');
     }
   }
-  async function remove(entry: QueueEntry) {
-    setEntries((current) => current.filter((e) => e.id !== entry.id));
-    try {
-      await mutateQueue('DELETE', `/api/queue/${entry.id}`);
-    } catch {
-      refresh();
-      setError('Delete failed; the client was restored.');
-    }
-  }
-
   async function editEntry(updated: QueueEntry) {
     setEntries((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
     try {
@@ -525,7 +515,6 @@ export function App() {
           connected={connected}
           onAdded={refresh}
           onEdit={editEntry}
-          onDelete={remove}
           onClear={refresh}
           userEmail={userEmail}
           error={error}
@@ -1017,7 +1006,6 @@ function Intake({
   entries,
   onAdded,
   onEdit,
-  onDelete,
   onClear,
   userEmail,
   error,
@@ -1026,7 +1014,6 @@ function Intake({
   entries: QueueEntry[];
   connected: boolean;
   onAdded: () => void;
-  onDelete: (entry: QueueEntry) => void;
   onEdit: (entry: QueueEntry) => void;
   onClear: () => void;
   userEmail: string;
@@ -1210,19 +1197,7 @@ function Intake({
             </div>
           ))}
       </div>
-      {editing && (
-        <EditModal
-          entry={editing}
-          onCancel={() => setEditing(null)}
-          onSave={saveEdit}
-          onDelete={() => {
-            if (window.confirm('Delete this client from the queue? This cannot be undone.')) {
-              onDelete(editing);
-              setEditing(null);
-            }
-          }}
-        />
-      )}
+      {editing && <EditModal entry={editing} onCancel={() => setEditing(null)} onSave={saveEdit} />}
     </main>
   );
 }
@@ -1231,12 +1206,10 @@ function EditModal({
   entry,
   onCancel,
   onSave,
-  onDelete,
 }: {
   entry: QueueEntry;
   onCancel: () => void;
   onSave: (entry: QueueEntry) => void;
-  onDelete: () => void;
 }) {
   const [draft, setDraft] = useState(entry);
   return (
@@ -1305,9 +1278,6 @@ function EditModal({
         <div className="modal-actions">
           <button className="secondary-button" onClick={onCancel}>
             Cancel
-          </button>
-          <button className="danger-button" onClick={onDelete}>
-            Delete
           </button>
           <button onClick={() => onSave(draft)}>Save changes</button>
         </div>
