@@ -307,24 +307,11 @@ select:focus {
   overflow: hidden;
 }
 .queue-group-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: #eef1f5;
+  height: 12px;
+  margin: 0 14px;
   border-top: 1px solid #d8dee7;
   border-bottom: 1px solid #d8dee7;
-  color: #687386;
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.queue-group-divider::after {
-  content: '';
-  height: 1px;
-  flex: 1;
-  background: #d8dee7;
+  background: #f7f8fb;
 }
 .intake-row {
   display: grid;

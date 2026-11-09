@@ -1096,9 +1096,7 @@ function Intake({
           ))}
         {entries.some((entry) => entry.appointmentTime) &&
           entries.some((entry) => !entry.appointmentTime) && (
-            <div className="queue-group-divider">
-              <span>Walk-ins</span>
-            </div>
+            <div className="queue-group-divider" />
           )}
         {entries
           .filter((entry) => !entry.appointmentTime)
