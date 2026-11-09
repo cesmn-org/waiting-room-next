@@ -3,14 +3,18 @@
 
     <application
         android:allowBackup="false"
-        android:label="Waiting Room TV"
+        android:label="Waiting Room"
         android:supportsRtl="true"
         android:theme="@style/Theme.WaitingRoomTv">
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            android:theme="@style/Theme.WaitingRoomSettings" />
+        <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="true"
-            android:screenOrientation="landscape">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

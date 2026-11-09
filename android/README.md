@@ -4,9 +4,12 @@ This is a minimal Android WebView app for displaying the deployed Waiting Room T
 
 ## Behavior
 
-- Opens `https://waiting-room.jbeyer.workers.dev/tv`.
+- Opens the selected interface at `https://waiting-room.jbeyer.workers.dev/tv` or `/tablet`.
 - Preserves the existing pairing-code flow and device cookie in WebView storage.
-- Uses landscape orientation and immersive fullscreen UI flags.
+- TV mode uses landscape orientation and immersive fullscreen UI flags.
+- Tablet mode allows the device's normal orientation and system UI.
+- Long-press anywhere in the WebView to open native settings and switch modes.
+- The selected mode is stored in Android preferences and survives app restarts.
 - Allows normal Android exit/navigation; it is not a kiosk or boot-launch app.
 - Restricts in-app navigation to the deployed Waiting Room host.
 
