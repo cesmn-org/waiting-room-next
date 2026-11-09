@@ -85,18 +85,23 @@ function Clock() {
 }
 function QueueList({
   title,
+  count,
   entries,
   action,
   details = false,
 }: {
-  title: string;
+  title: ReactNode;
+  count?: number;
   entries: QueueEntry[];
   action?: (entry: QueueEntry) => ReactNode;
   details?: boolean;
 }) {
   return (
     <section className="queue-section">
-      <h2>{title}</h2>
+      <h2 className="queue-heading">
+        <span>{title}</span>
+        {count !== undefined && <span className="queue-count">{count}</span>}
+      </h2>
       {entries.length === 0 ? (
         <p className="empty">No clients</p>
       ) : (
@@ -535,10 +540,6 @@ export function App() {
       {error && <p className="error">{error}</p>}
       {mode === 'tablet' && (
         <div className="tablet-list-toolbar">
-          <div className="tablet-queue-counts" aria-label="Checked-in client counts">
-            <span>{checkedInAppointmentCount} checked-in appointments</span>
-            <span>{checkedInWalkInCount} checked-in walk-ins</span>
-          </div>
           <div className="visibility-control" aria-label="Client visibility">
             <button
               className={!showAllTablet ? 'selected' : ''}
@@ -566,6 +567,7 @@ export function App() {
       <div className="queue-grid">
         <QueueList
           title="Appointments"
+          count={checkedInAppointmentCount}
           entries={appointments}
           details={mode === 'tablet'}
           action={
@@ -585,6 +587,7 @@ export function App() {
         />
         <QueueList
           title="Walk-ins"
+          count={checkedInWalkInCount}
           entries={walkIns}
           details={mode === 'tablet'}
           action={
