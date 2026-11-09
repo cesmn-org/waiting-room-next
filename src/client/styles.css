@@ -124,7 +124,7 @@ button.secondary-button {
 }
 .tablet-list-toolbar {
   margin: 0;
-  padding: 10px 28px 0;
+  padding: 10px 28px;
 }
 .tablet-queue-counts {
   display: flex;
