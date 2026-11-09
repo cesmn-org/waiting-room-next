@@ -983,6 +983,17 @@ function Intake({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [editing, setEditing] = useState<QueueEntry | null>(null);
+  const [showAll, setShowAll] = useState(() => localStorage.getItem('intake-show-all') === 'true');
+  const checkedInCount = entries.filter((entry) => entry.status === 'checked_in').length;
+  const shoppingCount = entries.filter((entry) => entry.status === 'shopping').length;
+  const visibleEntries = showAll
+    ? entries
+    : entries.filter((entry) => entry.status === 'checked_in');
+
+  function changeVisibility(showAllClients: boolean) {
+    setShowAll(showAllClients);
+    localStorage.setItem('intake-show-all', String(showAllClients));
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -1065,6 +1076,31 @@ function Intake({
           {saving ? 'Adding…' : 'Add client'}
         </button>
       </form>
+      <div className="intake-list-toolbar">
+        <div>
+          <h2>Clients</h2>
+          <p className="queue-summary">
+            {checkedInCount} checked in
+            {shoppingCount > 0 && ` · ${shoppingCount} shopping${showAll ? '' : ' hidden'}`}
+          </p>
+        </div>
+        <div className="visibility-control" aria-label="Client visibility">
+          <button
+            className={!showAll ? 'selected' : ''}
+            aria-pressed={!showAll}
+            onClick={() => changeVisibility(false)}
+          >
+            Checked-in only
+          </button>
+          <button
+            className={showAll ? 'selected' : ''}
+            aria-pressed={showAll}
+            onClick={() => changeVisibility(true)}
+          >
+            Show all
+          </button>
+        </div>
+      </div>
       <div className="intake-list">
         <div className="intake-row intake-row-header">
           <span>First name</span>
@@ -1074,7 +1110,7 @@ function Intake({
           <span>Status</span>
           <span>Actions</span>
         </div>
-        {entries
+        {visibleEntries
           .filter((entry) => entry.appointmentTime)
           .map((entry) => (
             <div className="intake-row" key={entry.id}>
@@ -1094,11 +1130,11 @@ function Intake({
               </div>
             </div>
           ))}
-        {entries.some((entry) => entry.appointmentTime) &&
-          entries.some((entry) => !entry.appointmentTime) && (
+        {visibleEntries.some((entry) => entry.appointmentTime) &&
+          visibleEntries.some((entry) => !entry.appointmentTime) && (
             <div className="queue-group-divider" />
           )}
-        {entries
+        {visibleEntries
           .filter((entry) => !entry.appointmentTime)
           .map((entry) => (
             <div className="intake-row" key={entry.id}>
