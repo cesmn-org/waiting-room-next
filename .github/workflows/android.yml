@@ -23,10 +23,26 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        shell: bash
+        run: |
+          # GitHub-hosted Ubuntu runners provide the SDK, but setup-android can
+          # replace its current command-line tools with an older distribution
+          # and then request the obsolete `tools` package. Use the runner's
+          # supported sdkmanager directly instead.
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          sdkmanager_path="$(find "$sdk_root/cmdline-tools" -path '*/bin/sdkmanager' -type f -print -quit 2>/dev/null || true)"
+          if [[ -z "$sdkmanager_path" ]]; then
+            echo "Could not find sdkmanager under $sdk_root/cmdline-tools" >&2
+            exit 1
+          fi
+          sdkmanager_dir="$(dirname "$sdkmanager_path")"
+          echo "$sdkmanager_dir" >> "$GITHUB_PATH"
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          yes | "$sdkmanager_path" --licenses >/dev/null
+          "$sdkmanager_path" --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
