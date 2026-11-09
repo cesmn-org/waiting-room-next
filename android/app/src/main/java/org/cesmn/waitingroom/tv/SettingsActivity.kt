@@ -28,6 +28,10 @@ class SettingsActivity : Activity() {
             text = "Choose the interface this device should display."
             textSize = 16f
         })
+        content.addView(TextView(this).apply {
+            text = "Detected device type: ${settings.detectedDeviceType.label}"
+            textSize = 16f
+        })
 
         val modeGroup = RadioGroup(this).apply {
             orientation = RadioGroup.VERTICAL

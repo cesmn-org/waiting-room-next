@@ -9,6 +9,8 @@ This is a minimal Android WebView app for displaying the deployed Waiting Room T
 - TV mode uses landscape orientation and immersive fullscreen UI flags.
 - Tablet mode allows the device's normal orientation and system UI.
 - Long-press anywhere in the WebView to open native settings and switch modes.
+- On first launch, Android TV devices default to TV mode and other devices default to tablet mode.
+- The detected device type is shown in settings for reference; manual mode selection remains available.
 - The selected mode is stored in Android preferences and survives app restarts.
 - Allows normal Android exit/navigation; it is not a kiosk or boot-launch app.
 - Restricts in-app navigation to the deployed Waiting Room host.
