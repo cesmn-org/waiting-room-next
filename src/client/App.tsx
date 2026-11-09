@@ -432,7 +432,14 @@ export function App() {
   }
 
   if ((mode === 'intake' || mode === 'admin' || mode === 'tablet') && !sessionChecked)
-    return <main className="auth-loading">Checking staff access…</main>;
+    return (
+      <main className="auth-loading">
+        <div>
+          <p>Checking staff access…</p>
+          <BuildVersion />
+        </div>
+      </main>
+    );
   if (mode === 'tv' && displayMessage.active)
     return (
       <main className="display-app message-screen">
