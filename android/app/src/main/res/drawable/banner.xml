@@ -8,5 +8,20 @@
         android:pathData="M0,0h320v180h-320z" />
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M72,60h176v16h-176zM72,82h176v16h-176zM72,104h112v16h-112z" />
+        android:pathData="M82,58c0,-8.84 7.16,-16 16,-16h124c8.84,0 16,7.16 16,16v52h-16v-40c0,-4.42 -3.58,-8 -8,-8h-92c-4.42,0 -8,3.58 -8,8v40h-16z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M78,96h164v30c0,8.84 -7.16,16 -16,16h-132c-8.84,0 -16,-7.16 -16,-16z" />
+    <path
+        android:fillColor="#9DB7D4"
+        android:pathData="M108,76h104v38h-104z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M96,132h16v20h-16zM208,132h16v20h-16z" />
+    <path
+        android:fillColor="#F6C85F"
+        android:pathData="M246,36m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0" />
+    <path
+        android:fillColor="#1A3252"
+        android:pathData="M243,26h6v12h-6zM243,36h12v6h-12z" />
 </vector>
