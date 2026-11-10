@@ -3,6 +3,7 @@
 
     <application
         android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
         android:label="Waiting Room Device"
         android:banner="@drawable/banner"
         android:supportsRtl="true"

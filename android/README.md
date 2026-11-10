@@ -15,6 +15,7 @@ This is a minimal Android WebView app for displaying the deployed Waiting Room T
 - Allows normal Android exit/navigation; it is not a kiosk or boot-launch app.
 - Restricts in-app navigation to the deployed Waiting Room host.
 - Declares an Android TV/Leanback launcher category and TV banner so the app appears in TV launchers.
+- Includes an explicit launcher icon for TV launchers that do not derive an icon from the banner.
 
 ## Build later
 
