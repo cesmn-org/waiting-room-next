@@ -104,6 +104,9 @@ button.secondary-button {
   background: var(--bg-dark);
   color: #fff;
 }
+.dark-app {
+  padding-top: max(24px, env(safe-area-inset-top));
+}
 .display-app {
   padding: 0 1.5rem 1.5rem;
 }
