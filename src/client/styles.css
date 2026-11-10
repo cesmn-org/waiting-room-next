@@ -108,14 +108,14 @@ button.secondary-button {
   padding: 0 2.5rem 2.5rem;
 }
 .display-app .app-header {
-  margin: 0 -2.5rem 2rem;
-  padding: 20px 40px;
+  margin: 0 -2.5rem;
+  padding: 14px 28px;
 }
 .display-app .header-title {
-  font-size: 2.4rem;
+  font-size: 1.35rem;
 }
 .display-app .clock {
-  font-size: 1.3rem;
+  font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.9);
 }
 .dark-app .app-header {
@@ -142,7 +142,7 @@ button.secondary-button {
   gap: 0;
 }
 .queue-section {
-  padding: 24px 28px;
+  padding: 16px 28px;
   background: transparent;
   color: #fff;
 }
@@ -150,11 +150,11 @@ button.secondary-button {
   border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 .queue-section h2 {
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   color: rgba(255, 255, 255, 0.7);
-  padding-bottom: 14px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 0 0 16px;
+  margin: 0 0 10px;
 }
 .queue-heading {
   display: flex;
@@ -183,7 +183,7 @@ button.secondary-button {
 .name-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 .entry-details {
   margin-top: 4px;
@@ -193,8 +193,8 @@ button.secondary-button {
 .client-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 10px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -206,7 +206,7 @@ button.secondary-button {
   line-height: 1.2;
 }
 .display-app .name-text {
-  font-size: 2.4rem;
+  font-size: 1.4rem;
   letter-spacing: 0.01em;
 }
 .shop-btn {
